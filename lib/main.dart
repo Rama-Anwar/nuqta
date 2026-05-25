@@ -1,4 +1,6 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:invoice_ai/firebase_options.dart';
 
 import 'login.dart';
 import 'dash.dart';
@@ -9,6 +11,9 @@ import 'services/local_server_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   await LocalServerService.instance.start();
   runApp(const MyApp());
 }

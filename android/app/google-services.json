@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1063819862062",
+    "project_id": "nuqta-7267a",
+    "storage_bucket": "nuqta-7267a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063819862062:android:8d2cd32b9e73e44e3effbf",
+        "android_client_info": {
+          "package_name": "com.example.nuqta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsA4XmpjB4yZeqnLP3_aI5KSxJUMQFJBI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
