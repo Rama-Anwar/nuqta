@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'nav.dart';
@@ -27,30 +28,47 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final username = _usernameController.text.trim();
+    final email = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
     setState(() {
       _isLoading = true;
     });
 
-    if (username == 'admin' && password == '123321') {
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
       if (!mounted) return;
+
+      Navigator.of(context).pushReplacementNamed(AppRoutes.dash);
+    } on FirebaseAuthException catch (e) {
+      String message = 'Login failed';
+
+      if (e.code == 'user-not-found') {
+        message = 'No user found for this email.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password.';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email.';
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Something went wrong')));
+    }
+
+    if (mounted) {
       setState(() {
         _isLoading = false;
       });
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(AppRoutes.dash);
-      return;
     }
-
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Wrong username or password.')),
-    );
   }
 
   @override
@@ -214,8 +232,8 @@ class _LoginCard extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppPalette.primaryContainer,
                       foregroundColor: AppPalette.textPrimary,
-                      disabledBackgroundColor:
-                          AppPalette.primaryContainer.withValues(alpha: 0.7),
+                      disabledBackgroundColor: AppPalette.primaryContainer
+                          .withValues(alpha: 0.7),
                       elevation: 0,
                       minimumSize: const Size.fromHeight(54),
                       shape: RoundedRectangleBorder(
@@ -244,18 +262,12 @@ class _LoginCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 28),
-          Container(
-            height: 1,
-            color: AppPalette.borderLowContrast,
-          ),
+          Container(height: 1, color: AppPalette.borderLowContrast),
           const SizedBox(height: 18),
           const Text(
             'Secured by Nuqta Core Infrastructure',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppPalette.textMuted,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: AppPalette.textMuted, fontSize: 14),
           ),
         ],
       ),
@@ -307,18 +319,16 @@ class _LoginTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
-      style: const TextStyle(
-        color: AppPalette.textPrimary,
-        fontSize: 16,
-      ),
-      decoration: const InputDecoration(
-        hintText: '',
-      ).copyWith(
+      style: const TextStyle(color: AppPalette.textPrimary, fontSize: 16),
+      decoration: const InputDecoration(hintText: '').copyWith(
         hintText: hintText,
         hintStyle: const TextStyle(color: AppPalette.surfaceContainerHighest),
         filled: true,
         fillColor: AppPalette.backgroundScaffold,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         enabledBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: AppPalette.borderLowContrast, width: 2),
         ),
