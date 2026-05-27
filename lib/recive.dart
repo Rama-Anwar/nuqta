@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'data/receipt_store.dart';
@@ -17,7 +18,7 @@ class ReceivePage extends StatefulWidget {
 class _ReceivePageState extends State<ReceivePage> {
   final _customerController = TextEditingController();
   final _invoiceController = TextEditingController();
-  final _dateController = TextEditingController(text: '2023-10-27');
+  final _dateController = TextEditingController();
   final _itemController = TextEditingController();
   final _quantityController = TextEditingController(text: '1');
   final _unitPriceController = TextEditingController();
@@ -28,7 +29,8 @@ class _ReceivePageState extends State<ReceivePage> {
   @override
   void initState() {
     super.initState();
-    _incomingOrderSubscription = LocalServerService.instance.incomingOrderStream.listen(_handleIncomingOrder);
+    _incomingOrderSubscription = LocalServerService.instance.incomingOrderStream
+        .listen(_handleIncomingOrder);
   }
 
   @override
@@ -43,7 +45,8 @@ class _ReceivePageState extends State<ReceivePage> {
     super.dispose();
   }
 
-  double get _subtotal => _items.fold<double>(0, (sum, line) => sum + line.total);
+  double get _subtotal =>
+      _items.fold<double>(0, (sum, line) => sum + line.total);
   double get _tax => 0.0;
   double get _total => _subtotal;
 
@@ -54,13 +57,17 @@ class _ReceivePageState extends State<ReceivePage> {
 
     if (name.isEmpty || quantity <= 0 || price <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add a valid item, quantity, and unit price.')),
+        const SnackBar(
+          content: Text('Add a valid item, quantity, and unit price.'),
+        ),
       );
       return;
     }
 
     setState(() {
-      _items.add(_ReceiptLine(item: name, quantity: quantity, unitPrice: price));
+      _items.add(
+        _ReceiptLine(item: name, quantity: quantity, unitPrice: price),
+      );
       _itemController.clear();
       _quantityController.text = '1';
       _unitPriceController.clear();
@@ -94,7 +101,9 @@ class _ReceivePageState extends State<ReceivePage> {
       return;
     }
 
-    final dynamic data = incomingData is List ? (incomingData.isNotEmpty ? incomingData.first : <String, dynamic>{}) : incomingData;
+    final dynamic data = incomingData is List
+        ? (incomingData.isNotEmpty ? incomingData.first : <String, dynamic>{})
+        : incomingData;
     if (data is! Map) {
       return;
     }
@@ -129,9 +138,9 @@ class _ReceivePageState extends State<ReceivePage> {
         ..addAll(incomingItems);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data loaded successfully')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Data loaded successfully')));
   }
 
   String? _readIncomingString(Map<String, dynamic> source, List<String> keys) {
@@ -188,11 +197,7 @@ class _ReceivePageState extends State<ReceivePage> {
       }
 
       parsedItems.add(
-        _ReceiptLine(
-          item: name,
-          quantity: quantity,
-          unitPrice: price,
-        ),
+        _ReceiptLine(item: name, quantity: quantity, unitPrice: price),
       );
     }
 
@@ -215,7 +220,11 @@ class _ReceivePageState extends State<ReceivePage> {
     return 0;
   }
 
-  double _readIncomingDouble(Map<String, dynamic> source, List<String> keys, {double defaultValue = 0.0}) {
+  double _readIncomingDouble(
+    Map<String, dynamic> source,
+    List<String> keys, {
+    double defaultValue = 0.0,
+  }) {
     for (final key in keys) {
       final value = source[key];
       if (value is num) {
@@ -241,8 +250,13 @@ class _ReceivePageState extends State<ReceivePage> {
 
     final receipt = ReceiptRecord(
       id: 'RCPT-${DateTime.now().millisecondsSinceEpoch}',
-      customerName: _customerController.text.trim().isEmpty ? 'Unnamed Customer' : _customerController.text.trim(),
-      invoiceId: _invoiceController.text.trim().isEmpty ? null : _invoiceController.text.trim(),
+      userUid: FirebaseAuth.instance.currentUser!.uid,
+      customerName: _customerController.text.trim().isEmpty
+          ? 'Unnamed Customer'
+          : _customerController.text.trim(),
+      invoiceId: _invoiceController.text.trim().isEmpty
+          ? null
+          : _invoiceController.text.trim(),
       date: DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
       createdAt: DateTime.now(),
       items: _items
@@ -296,7 +310,12 @@ class _ReceivePageState extends State<ReceivePage> {
                 builder: (context, constraints) {
                   final isDesktop = constraints.maxWidth >= 1024;
                   return SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(16, 20, 16, isDesktop ? 48 : 220),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      20,
+                      16,
+                      isDesktop ? 48 : 220,
+                    ),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 1280),
@@ -476,11 +495,26 @@ class _DesktopLayout extends StatelessWidget {
                 title: 'Order Information',
                 child: Column(
                   children: [
-                    _LabeledInput(controller: customerController, label: 'Customer/Supplier Name', hint: 'Enter name'),
+                    _LabeledInput(
+                      controller: customerController,
+                      label: 'Customer/Supplier Name',
+                      hint: 'Enter name',
+                    ),
                     const SizedBox(height: 16),
-                    _LabeledInput(controller: invoiceController, label: 'Invoice ID (Optional)', hint: 'INV-0000', mono: true),
+                    _LabeledInput(
+                      controller: invoiceController,
+                      label: 'Invoice ID (Optional)',
+                      hint: 'INV-0000',
+                      mono: true,
+                    ),
                     const SizedBox(height: 16),
-                    _LabeledInput(controller: dateController, label: 'Date', hint: '2023-10-27', mono: true, isDate: true),
+                    _LabeledInput(
+                      controller: dateController,
+                      label: 'Date',
+                      hint: '2023-10-27',
+                      mono: true,
+                      isDate: true,
+                    ),
                   ],
                 ),
               ),
@@ -489,17 +523,34 @@ class _DesktopLayout extends StatelessWidget {
                 title: 'Add Item',
                 child: Column(
                   children: [
-                    _LabeledInput(controller: itemController, label: 'Item Name', hint: 'Scan or type item'),
+                    _LabeledInput(
+                      controller: itemController,
+                      label: 'Item Name',
+                      hint: 'Scan or type item',
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: _LabeledInput(controller: quantityController, label: 'Quantity', hint: '0', mono: true, isNumber: true),
+                          child: _LabeledInput(
+                            controller: quantityController,
+                            label: 'Quantity',
+                            hint: '0',
+                            mono: true,
+                            isNumber: true,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: _LabeledInput(controller: unitPriceController, label: 'Unit Price', hint: '0.00', mono: true, isNumber: true, prefix: '\$'),
+                          child: _LabeledInput(
+                            controller: unitPriceController,
+                            label: 'Unit Price',
+                            hint: '0.00',
+                            mono: true,
+                            isNumber: true,
+                            prefix: '\$',
+                          ),
                         ),
                       ],
                     ),
@@ -513,10 +564,18 @@ class _DesktopLayout extends StatelessWidget {
                           foregroundColor: AppPalette.textPrimary,
                           elevation: 0,
                           minimumSize: const Size.fromHeight(48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         icon: const Icon(Icons.add, size: 18),
-                        label: const Text('ADD ITEM', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1)),
+                        label: const Text(
+                          'ADD ITEM',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -590,11 +649,26 @@ class _MobileLayout extends StatelessWidget {
           title: 'Order Information',
           child: Column(
             children: [
-              _LabeledInput(controller: customerController, label: 'Customer/Supplier Name', hint: 'Enter name'),
+              _LabeledInput(
+                controller: customerController,
+                label: 'Customer/Supplier Name',
+                hint: 'Enter name',
+              ),
               const SizedBox(height: 16),
-              _LabeledInput(controller: invoiceController, label: 'Invoice ID (Optional)', hint: 'INV-0000', mono: true),
+              _LabeledInput(
+                controller: invoiceController,
+                label: 'Invoice ID (Optional)',
+                hint: 'INV-0000',
+                mono: true,
+              ),
               const SizedBox(height: 16),
-              _LabeledInput(controller: dateController, label: 'Date', hint: '2023-10-27', mono: true, isDate: true),
+              _LabeledInput(
+                controller: dateController,
+                label: 'Date',
+                hint: '2023-10-27',
+                mono: true,
+                isDate: true,
+              ),
             ],
           ),
         ),
@@ -603,16 +677,33 @@ class _MobileLayout extends StatelessWidget {
           title: 'Add Item',
           child: Column(
             children: [
-              _LabeledInput(controller: itemController, label: 'Item Name', hint: 'Scan or type item'),
+              _LabeledInput(
+                controller: itemController,
+                label: 'Item Name',
+                hint: 'Scan or type item',
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: _LabeledInput(controller: quantityController, label: 'Quantity', hint: '0', mono: true, isNumber: true),
+                    child: _LabeledInput(
+                      controller: quantityController,
+                      label: 'Quantity',
+                      hint: '0',
+                      mono: true,
+                      isNumber: true,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _LabeledInput(controller: unitPriceController, label: 'Unit Price', hint: '0.00', mono: true, isNumber: true, prefix: '\$'),
+                    child: _LabeledInput(
+                      controller: unitPriceController,
+                      label: 'Unit Price',
+                      hint: '0.00',
+                      mono: true,
+                      isNumber: true,
+                      prefix: '\$ ',
+                    ),
                   ),
                 ],
               ),
@@ -626,10 +717,18 @@ class _MobileLayout extends StatelessWidget {
                     foregroundColor: AppPalette.textPrimary,
                     elevation: 0,
                     minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('ADD ITEM', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1)),
+                  label: const Text(
+                    'ADD ITEM',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -678,38 +777,81 @@ class _ItemsPanelDesktop extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CardShell(
       title: 'Line Items',
-      trailing: Text('${items.length} Items', style: const TextStyle(color: AppPalette.textMuted, fontFamily: 'monospace')),
+      trailing: Text(
+        '${items.length} Items',
+        style: const TextStyle(
+          color: AppPalette.textMuted,
+          fontFamily: 'monospace',
+        ),
+      ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
               color: AppPalette.backgroundScaffold,
-              border: Border(bottom: BorderSide(color: AppPalette.borderLowContrast)),
+              border: Border(
+                bottom: BorderSide(color: AppPalette.borderLowContrast),
+              ),
             ),
             child: const Row(
               children: [
-                SizedBox(width: 28, child: Text('#', style: _HeadCellStyle.style)),
-                Expanded(flex: 7, child: Text('Description', style: _HeadCellStyle.style)),
-                SizedBox(width: 88, child: Text('Qty', textAlign: TextAlign.center, style: _HeadCellStyle.style)),
-                SizedBox(width: 130, child: Text('Price', textAlign: TextAlign.center, style: _HeadCellStyle.style)),
-                SizedBox(width: 140, child: Text('Total', textAlign: TextAlign.right, style: _HeadCellStyle.style)),
+                SizedBox(
+                  width: 28,
+                  child: Text('#', style: _HeadCellStyle.style),
+                ),
+                Expanded(
+                  flex: 7,
+                  child: Text('Description', style: _HeadCellStyle.style),
+                ),
+                SizedBox(
+                  width: 88,
+                  child: Text(
+                    'Qty',
+                    textAlign: TextAlign.center,
+                    style: _HeadCellStyle.style,
+                  ),
+                ),
+                SizedBox(
+                  width: 130,
+                  child: Text(
+                    'Price',
+                    textAlign: TextAlign.center,
+                    style: _HeadCellStyle.style,
+                  ),
+                ),
+                SizedBox(
+                  width: 140,
+                  child: Text(
+                    'Total',
+                    textAlign: TextAlign.right,
+                    style: _HeadCellStyle.style,
+                  ),
+                ),
               ],
             ),
           ),
-          if (items.isEmpty) const _EmptyState() else ...List.generate(items.length, (index) {
-            final line = items[index];
-            return _ItemRow(
-              key: ValueKey(line),
-              index: index + 1,
-              line: line,
-              onNameChanged: (value) => onNameChanged(index, value),
-              onQtyChanged: (value) => onQtyChanged(index, value),
-              onPriceChanged: (value) => onPriceChanged(index, value),
-              onRemove: () => onRemoveItem(index),
-            );
-          }),
-          _DesktopTotalsSummary(total: total, subtotal: subtotal, tax: tax, onSubmit: onSubmit),
+          if (items.isEmpty)
+            const _EmptyState()
+          else
+            ...List.generate(items.length, (index) {
+              final line = items[index];
+              return _ItemRow(
+                key: ValueKey(line),
+                index: index + 1,
+                line: line,
+                onNameChanged: (value) => onNameChanged(index, value),
+                onQtyChanged: (value) => onQtyChanged(index, value),
+                onPriceChanged: (value) => onPriceChanged(index, value),
+                onRemove: () => onRemoveItem(index),
+              );
+            }),
+          _DesktopTotalsSummary(
+            total: total,
+            subtotal: subtotal,
+            tax: tax,
+            onSubmit: onSubmit,
+          ),
         ],
       ),
     );
@@ -741,7 +883,13 @@ class _ItemsPanelMobile extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CardShell(
       title: 'Line Items',
-      trailing: Text('${items.length} Items', style: const TextStyle(color: AppPalette.textMuted, fontFamily: 'monospace')),
+      trailing: Text(
+        '${items.length} Items',
+        style: const TextStyle(
+          color: AppPalette.textMuted,
+          fontFamily: 'monospace',
+        ),
+      ),
       child: Column(
         children: [
           if (items.isEmpty)
@@ -772,7 +920,12 @@ class _DesktopTotalsSummary extends StatelessWidget {
   final double total;
   final VoidCallback onSubmit;
 
-  const _DesktopTotalsSummary({required this.subtotal, required this.tax, required this.total, required this.onSubmit});
+  const _DesktopTotalsSummary({
+    required this.subtotal,
+    required this.tax,
+    required this.total,
+    required this.onSubmit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -801,12 +954,20 @@ class _DesktopTotalsSummary extends StatelessWidget {
                 foregroundColor: AppPalette.textPrimary,
                 elevation: 0,
                 minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('GENERATE INVOICE', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1)),
+                  Text(
+                    'GENERATE INVOICE',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
+                  ),
                   SizedBox(width: 8),
                   Icon(Icons.arrow_forward_rounded, size: 18),
                 ],
@@ -824,7 +985,11 @@ class _MobileCompactTotals extends StatelessWidget {
   final double tax;
   final double total;
 
-  const _MobileCompactTotals({required this.subtotal, required this.tax, required this.total});
+  const _MobileCompactTotals({
+    required this.subtotal,
+    required this.tax,
+    required this.total,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -855,8 +1020,24 @@ class _MobileActionBar extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Total Amount', style: TextStyle(color: AppPalette.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
-                Text(_currency(total), style: const TextStyle(color: AppPalette.textPrimary, fontSize: 24, fontWeight: FontWeight.w700, fontFamily: 'monospace')),
+                const Text(
+                  'Total Amount',
+                  style: TextStyle(
+                    color: AppPalette.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                  ),
+                ),
+                Text(
+                  _currency(total),
+                  style: const TextStyle(
+                    color: AppPalette.textPrimary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'monospace',
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -869,12 +1050,20 @@ class _MobileActionBar extends StatelessWidget {
                   foregroundColor: AppPalette.textPrimary,
                   elevation: 0,
                   minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('GENERATE INVOICE', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1)),
+                    Text(
+                      'GENERATE INVOICE',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
+                    ),
                     SizedBox(width: 8),
                     Icon(Icons.arrow_forward_rounded, size: 18),
                   ],
@@ -966,7 +1155,9 @@ class _LabeledInput extends StatelessWidget {
         const SizedBox(height: 6),
         TextField(
           controller: controller,
-          keyboardType: isDate || isNumber ? TextInputType.number : TextInputType.text,
+          keyboardType: isDate || isNumber
+              ? TextInputType.number
+              : TextInputType.text,
           style: TextStyle(
             color: AppPalette.textPrimary,
             fontSize: mono ? 14 : 16,
@@ -974,18 +1165,32 @@ class _LabeledInput extends StatelessWidget {
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppPalette.surfaceContainerHighest),
+            hintStyle: const TextStyle(
+              color: AppPalette.surfaceContainerHighest,
+            ),
             filled: true,
             fillColor: AppPalette.backgroundScaffold,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: const UnderlineInputBorder(
-              borderSide: BorderSide(color: AppPalette.borderLowContrast, width: 2),
+              borderSide: BorderSide(
+                color: AppPalette.borderLowContrast,
+                width: 2,
+              ),
             ),
             enabledBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: AppPalette.borderLowContrast, width: 2),
+              borderSide: BorderSide(
+                color: AppPalette.borderLowContrast,
+                width: 2,
+              ),
             ),
             focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: AppPalette.primaryContainer, width: 2),
+              borderSide: BorderSide(
+                color: AppPalette.primaryContainer,
+                width: 2,
+              ),
             ),
             prefixText: prefix,
             prefixStyle: const TextStyle(color: AppPalette.textMuted),
@@ -1013,7 +1218,15 @@ class _ItemRow extends StatelessWidget {
   final ValueChanged<String> onPriceChanged;
   final VoidCallback onRemove;
 
-  const _ItemRow({required super.key, required this.index, required this.line, required this.onNameChanged, required this.onQtyChanged, required this.onPriceChanged, required this.onRemove});
+  const _ItemRow({
+    required super.key,
+    required this.index,
+    required this.line,
+    required this.onNameChanged,
+    required this.onQtyChanged,
+    required this.onPriceChanged,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1025,7 +1238,16 @@ class _ItemRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(width: 28, child: Text('$index', style: const TextStyle(color: AppPalette.textMuted, fontFamily: 'monospace'))),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$index',
+              style: const TextStyle(
+                color: AppPalette.textMuted,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
           Expanded(
             flex: 7,
             child: TextFormField(
@@ -1048,14 +1270,22 @@ class _ItemRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text('Qty', style: TextStyle(color: AppPalette.textMuted, fontSize: 11)),
+                const Text(
+                  'Qty',
+                  style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                ),
                 const SizedBox(height: 4),
                 TextFormField(
                   initialValue: line.quantity.toString(),
                   onChanged: onQtyChanged,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppPalette.textPrimary, fontFamily: 'monospace'),
+                  style: const TextStyle(
+                    color: AppPalette.textPrimary,
+                    fontFamily: 'monospace',
+                  ),
                   decoration: const InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
@@ -1073,14 +1303,22 @@ class _ItemRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text('Price', style: TextStyle(color: AppPalette.textMuted, fontSize: 11)),
+                const Text(
+                  'Price',
+                  style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                ),
                 const SizedBox(height: 4),
                 TextFormField(
                   initialValue: line.unitPrice.toStringAsFixed(2),
                   onChanged: onPriceChanged,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppPalette.textPrimary, fontFamily: 'monospace'),
+                  style: const TextStyle(
+                    color: AppPalette.textPrimary,
+                    fontFamily: 'monospace',
+                  ),
                   decoration: const InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
@@ -1100,9 +1338,21 @@ class _ItemRow extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Total', style: TextStyle(color: AppPalette.textMuted, fontSize: 11)),
+                    const Text(
+                      'Total',
+                      style: TextStyle(
+                        color: AppPalette.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(_currency(line.total), style: const TextStyle(color: AppPalette.textPrimary, fontFamily: 'monospace')),
+                    Text(
+                      _currency(line.total),
+                      style: const TextStyle(
+                        color: AppPalette.textPrimary,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(width: 8),
@@ -1129,7 +1379,15 @@ class _MobileItemCard extends StatelessWidget {
   final ValueChanged<String> onPriceChanged;
   final VoidCallback onRemove;
 
-  const _MobileItemCard({required super.key, required this.index, required this.line, required this.onNameChanged, required this.onQtyChanged, required this.onPriceChanged, required this.onRemove});
+  const _MobileItemCard({
+    required super.key,
+    required this.index,
+    required this.line,
+    required this.onNameChanged,
+    required this.onQtyChanged,
+    required this.onPriceChanged,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1149,7 +1407,14 @@ class _MobileItemCard extends StatelessWidget {
               CircleAvatar(
                 radius: 14,
                 backgroundColor: AppPalette.surfaceCard,
-                child: Text('$index', style: const TextStyle(color: AppPalette.textPrimary, fontSize: 12, fontFamily: 'monospace')),
+                child: Text(
+                  '$index',
+                  style: const TextStyle(
+                    color: AppPalette.textPrimary,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1157,7 +1422,10 @@ class _MobileItemCard extends StatelessWidget {
                   initialValue: line.item,
                   onChanged: onNameChanged,
                   keyboardType: TextInputType.text,
-                  style: const TextStyle(color: AppPalette.textPrimary, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: AppPalette.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
                   decoration: const InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
@@ -1183,7 +1451,9 @@ class _MobileItemCard extends StatelessWidget {
                   label: 'Qty',
                   value: line.quantity.toString(),
                   onChanged: onQtyChanged,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -1193,12 +1463,19 @@ class _MobileItemCard extends StatelessWidget {
                   label: 'Price',
                   value: line.unitPrice.toStringAsFixed(2),
                   onChanged: onPriceChanged,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(child: _MobileStatBlock(label: 'Total', value: _currency(line.total))),
+              Expanded(
+                child: _MobileStatBlock(
+                  label: 'Total',
+                  value: _currency(line.total),
+                ),
+              ),
             ],
           ),
         ],
@@ -1214,21 +1491,34 @@ class _MobileEditableStatBlock extends StatelessWidget {
   final TextInputType keyboardType;
   final TextAlign textAlign;
 
-  const _MobileEditableStatBlock({required this.label, required this.value, required this.onChanged, required this.keyboardType, required this.textAlign});
+  const _MobileEditableStatBlock({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    required this.keyboardType,
+    required this.textAlign,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, textAlign: TextAlign.center, style: const TextStyle(color: AppPalette.textMuted, fontSize: 11)),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppPalette.textMuted, fontSize: 11),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           initialValue: value,
           onChanged: onChanged,
           keyboardType: keyboardType,
           textAlign: textAlign,
-          style: const TextStyle(color: AppPalette.textPrimary, fontFamily: 'monospace'),
+          style: const TextStyle(
+            color: AppPalette.textPrimary,
+            fontFamily: 'monospace',
+          ),
           decoration: const InputDecoration(
             isDense: true,
             border: InputBorder.none,
@@ -1257,9 +1547,24 @@ class _MobileStatBlock extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(label, style: const TextStyle(color: AppPalette.textMuted, fontSize: 11, fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppPalette.textMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(value, textAlign: TextAlign.center, style: const TextStyle(color: AppPalette.textPrimary, fontFamily: 'monospace', fontWeight: FontWeight.w600)),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppPalette.textPrimary,
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -1277,9 +1582,16 @@ class _EmptyState extends StatelessWidget {
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.receipt_long_rounded, size: 44, color: AppPalette.textMuted),
+          Icon(
+            Icons.receipt_long_rounded,
+            size: 44,
+            color: AppPalette.textMuted,
+          ),
           SizedBox(height: 8),
-          Text('No items added yet.', style: TextStyle(color: AppPalette.textMuted)),
+          Text(
+            'No items added yet.',
+            style: TextStyle(color: AppPalette.textMuted),
+          ),
         ],
       ),
     );
@@ -1291,7 +1603,11 @@ class _SummaryRow extends StatelessWidget {
   final String value;
   final bool bold;
 
-  const _SummaryRow({required this.label, required this.value, this.bold = false});
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.bold = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1325,12 +1641,16 @@ class _ReceiptLine {
   int quantity;
   double unitPrice;
 
-  _ReceiptLine({required this.item, required this.quantity, required this.unitPrice});
+  _ReceiptLine({
+    required this.item,
+    required this.quantity,
+    required this.unitPrice,
+  });
 
   double get total => quantity * unitPrice;
 }
 
-String _currency(double value) => '\$${value.toStringAsFixed(2)}';
+String _currency(double value) => 'JOD ${value.toStringAsFixed(2)}';
 
 class AppPalette {
   static const Color backgroundScaffold = Color(0xFF1A1D20);
@@ -1345,5 +1665,3 @@ class AppPalette {
   static const Color primaryContainer = Color(0xFFEE671C);
   static const Color errorMuted = Color(0xFFE07A5F);
 }
-
-

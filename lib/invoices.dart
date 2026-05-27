@@ -758,6 +758,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
     final updatedReceipt = ReceiptRecord(
       id: _invoice.id,
       customerName: _invoice.customerName,
+      userUid: '..', // TODO: to be fixed
       invoiceId: _invoice.invoiceId,
       date: _invoice.date,
       createdAt: _invoice.createdAt,
