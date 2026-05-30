@@ -259,6 +259,7 @@ class _ReceivePageState extends State<ReceivePage> {
           : _invoiceController.text.trim(),
       date: DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
       createdAt: DateTime.now(),
+      status: InvoiceStatus.paid,
       items: _items
           .map(
             (line) => ReceiptLineItem(

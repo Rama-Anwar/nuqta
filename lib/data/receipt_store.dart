@@ -22,6 +22,19 @@ class ReceiptStore extends ChangeNotifier {
 
   List<ReceiptRecord> get receipts => List.unmodifiable(_receipts);
 
+  Stream<List<ReceiptRecord>> receiptsStream() {
+    return _col
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => ReceiptRecord.fromJson({...doc.data(), 'id': doc.id}),
+              )
+              .toList(),
+        );
+  }
+
   /// Loads all receipts from Firestore (once per app session).
   Future<void> ensureLoaded() async {
     if (_loaded) return;
@@ -95,6 +108,7 @@ class ReceiptStore extends ChangeNotifier {
       createdAt: receipt.createdAt,
       items: receipt.items,
       userUid: receipt.userUid,
+      status: receipt.status,
     );
   }
 
@@ -210,6 +224,7 @@ class ReceiptStore extends ChangeNotifier {
 }
 
 // ─── Data models (unchanged) ─────────────────────────────────────────────────
+enum InvoiceStatus { paid, outstanding }
 
 class ReceiptRecord {
   final String id;
@@ -219,6 +234,8 @@ class ReceiptRecord {
   final DateTime createdAt;
   final List<ReceiptLineItem> items;
   final String userUid;
+  final InvoiceStatus status;
+
 
   const ReceiptRecord({
     required this.id,
@@ -228,6 +245,7 @@ class ReceiptRecord {
     required this.date,
     required this.createdAt,
     required this.items,
+    required this.status,
   });
 
   double get subtotal => items.fold<double>(0, (sum, item) => sum + item.total);
@@ -238,7 +256,7 @@ class ReceiptRecord {
     'customerName': customerName,
     'invoiceId': invoiceId,
     'userUid': userUid,
-
+    'status':status.name,
     // Store as real Firestore timestamps
     'date': Timestamp.fromDate(date),
     'createdAt': Timestamp.fromDate(createdAt),
@@ -260,6 +278,10 @@ class ReceiptRecord {
       invoiceId: json['invoiceId'] as String?,
       date: _parseDate(json['date']),
       createdAt: _parseDate(json['createdAt']),
+      status: InvoiceStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => InvoiceStatus.paid,
+      ),
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => ReceiptLineItem.fromJson(e as Map<String, dynamic>))
           .toList(),

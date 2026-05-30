@@ -1,3 +1,5 @@
+import 'package:invoice_ai/data/receipt_store.dart';
+
 class InvoiceLine {
   final String name;
   final int quantity;
@@ -6,7 +8,7 @@ class InvoiceLine {
   const InvoiceLine({required this.name, required this.quantity, required this.unitPrice});
 }
 
-enum InvoiceStatus { paid, sent, draft, overdue }
+
 
 class InvoiceModel {
   final String id;

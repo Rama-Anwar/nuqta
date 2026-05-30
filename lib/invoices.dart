@@ -13,66 +13,92 @@ class InvoicesPage extends StatefulWidget {
 }
 
 class _InvoicesPageState extends State<InvoicesPage> {
-  final List<InvoiceModel> _invoices = [];
+  // final List<InvoiceModel> _invoices = [];
   String selectedYear = '2026';
   String selectedMonth = 'MAY';
   bool isAllSelected = false;
   DateTime? _selectedDate;
-  List<String> _cachedYears = ['2026', '2025', '2024'];
 
-  @override
-  void initState() {
-    super.initState();
-    ReceiptStore.instance.ensureLoaded().then((_) {
-      _syncFromStore();
-      ReceiptStore.instance.addListener(_syncFromStore);
-    });
+  Future<void> _toggleStatus(InvoiceModel invoice) async {
+    final receipt = (await ReceiptStore.instance.receiptsStream().first)
+        .firstWhere((r) => r.id == invoice.id);
+    final newStatus = invoice.status == InvoiceStatus.paid
+        ? InvoiceStatus.outstanding
+        : InvoiceStatus.paid;
+
+    await ReceiptStore.instance.updateReceipt(
+      ReceiptRecord(
+        id: receipt.id,
+        userUid: receipt.userUid,
+        customerName: receipt.customerName,
+        invoiceId: receipt.invoiceId,
+        date: receipt.date,
+        createdAt: receipt.createdAt,
+        items: receipt.items,
+        status: newStatus,
+      ),
+    );
   }
 
-  @override
-  void dispose() {
-    try {
-      ReceiptStore.instance.removeListener(_syncFromStore);
-    } catch (_) {}
-    super.dispose();
-  }
-
-  void _syncFromStore() {
-    if (!mounted) return;
-    setState(() {
-      _invoices
-        ..clear()
-        ..addAll(
-          ReceiptStore.instance.receipts.map(
-            (r) => InvoiceModel(
-              id: r.id,
-              customerName: r.customerName,
-              date: r.date,
-              totalAmount: r.total,
-              status: _statusFromInvoiceId(r.invoiceId),
-              items: r.items.map((it) => InvoiceLine(name: it.item, quantity: it.quantity, unitPrice: it.unitPrice)).toList(),
-              createdAt: r.createdAt,
-              invoiceId: r.invoiceId,
+  Widget _buildFilterSectionWithInvoices(List<InvoiceModel> invoices) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLowContrast),
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          SizedBox(
+            width: 150,
+            child: _buildDropdown(
+              'Year',
+              selectedYear,
+              _availableYears(invoices),
             ),
           ),
-        );
-      // update cached years to avoid recomputing on every build
-      final years = _invoices.map((invoice) => invoice.date.year.toString()).toSet().toList()..sort((a, b) => b.compareTo(a));
-      if (years.isNotEmpty) _cachedYears = years;
-    });
+          SizedBox(
+            width: 150,
+            child: _buildDropdown('Month', selectedMonth, _availableMonths),
+          ),
+          _buildAllToggle(),
+        ],
+      ),
+    );
   }
 
-  InvoiceStatus _statusFromInvoiceId(String? invoiceId) {
-    if (invoiceId == null || invoiceId.isEmpty) return InvoiceStatus.sent;
-    final length = invoiceId.length;
-    if (length.isEven) return InvoiceStatus.sent;
-    return InvoiceStatus.paid;
+  List<InvoiceModel> _mapInvoices(List<ReceiptRecord> receipts) {
+    return receipts
+        .map(
+          (r) => InvoiceModel(
+            id: r.id,
+            customerName: r.customerName,
+            date: r.date,
+            totalAmount: r.total,
+            status: r.status,
+            items: r.items
+                .map(
+                  (it) => InvoiceLine(
+                    name: it.item,
+                    quantity: it.quantity,
+                    unitPrice: it.unitPrice,
+                  ),
+                )
+                .toList(),
+            createdAt: r.createdAt,
+            invoiceId: r.invoiceId,
+          ),
+        )
+        .toList();
   }
 
-  List<InvoiceModel> get _visibleInvoices {
-    if (isAllSelected) return _invoices;
+  List<InvoiceModel> _visibleInvoices(List<InvoiceModel> invoices) {
+    if (isAllSelected) return invoices;
 
-    Iterable<InvoiceModel> filtered = _invoices.where((invoice) {
+    Iterable<InvoiceModel> filtered = invoices.where((invoice) {
       final monthMatches = _monthLabel(invoice.date.month) == selectedMonth;
       final yearMatches = invoice.date.year.toString() == selectedYear;
       return monthMatches && yearMatches;
@@ -88,9 +114,6 @@ class _InvoicesPageState extends State<InvoicesPage> {
 
     return filtered.toList();
   }
-
-  double get _outstandingTotal => _visibleInvoices.where((invoice) => invoice.status != InvoiceStatus.paid).fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
-  double get _collectedTotal => _visibleInvoices.where((invoice) => invoice.status == InvoiceStatus.paid).fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
 
   @override
   Widget build(BuildContext context) {
@@ -120,13 +143,43 @@ class _InvoicesPageState extends State<InvoicesPage> {
           child: Divider(color: AppColors.borderLowContrast, height: 1),
         ),
       ),
-      body: Stack(
-        children: [
-          ListView(
+      body: StreamBuilder<List<ReceiptRecord>>(
+        stream: ReceiptStore.instance.receiptsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Something went wrong',
+                style: GoogleFonts.inter(color: Colors.white),
+              ),
+            );
+          }
+
+          final receipts = snapshot.data ?? [];
+
+          final invoices = _mapInvoices(receipts);
+
+          final visibleInvoices = _visibleInvoices(invoices);
+
+          final outstandingTotal = visibleInvoices
+              .where((invoice) => invoice.status != InvoiceStatus.paid)
+              .fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
+
+          final collectedTotal = visibleInvoices
+              .where((invoice) => invoice.status == InvoiceStatus.paid)
+              .fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
+
+          return ListView(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
             children: [
-              _buildFilterSection(),
+              _buildFilterSectionWithInvoices(invoices),
+
               const SizedBox(height: 12),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -150,6 +203,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                             firstDate: DateTime(2000),
                             lastDate: DateTime(2100),
                           );
+
                           if (picked != null) {
                             setState(() {
                               _selectedDate = picked;
@@ -159,11 +213,16 @@ class _InvoicesPageState extends State<InvoicesPage> {
                             });
                           }
                         },
-                        icon: const Icon(Icons.calendar_month_outlined, color: AppColors.textMuted),
+                        icon: const Icon(
+                          Icons.calendar_month_outlined,
+                          color: AppColors.textMuted,
+                        ),
                       ),
+
                       const SizedBox(width: 4),
+
                       Text(
-                        '${_visibleInvoices.length} TOTAL',
+                        '${visibleInvoices.length} TOTAL',
                         style: GoogleFonts.jetBrainsMono(
                           color: AppColors.accent,
                           fontSize: 14,
@@ -174,36 +233,41 @@ class _InvoicesPageState extends State<InvoicesPage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
-              ..._visibleInvoices.map(_buildInvoiceCard),
+
+              ...visibleInvoices.map(_buildInvoiceCard),
+
               const SizedBox(height: 24),
-              _buildStatsTiles(),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatTile(
+                      'OUTSTANDING',
+                      _currency(outstandingTotal),
+                      Icons.pending_actions,
+                      AppColors.errorMuted,
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: _buildStatTile(
+                      'COLLECTED',
+                      _currency(collectedTotal),
+                      Icons.account_balance_wallet,
+                      AppColors.successMuted,
+                    ),
+                  ),
+                ],
+              ),
             ],
-          ),
-          _buildFAB(),
-        ],
+          );
+        },
       ),
       bottomNavigationBar: _buildBottomNav(),
-    );
-  }
-
-  Widget _buildFilterSection() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLowContrast),
-      ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          SizedBox(width: 150, child: _buildDropdown('Year', selectedYear, _availableYears)),
-          SizedBox(width: 150, child: _buildDropdown('Month', selectedMonth, _availableMonths)),
-          _buildAllToggle(),
-        ],
-      ),
     );
   }
 
@@ -227,38 +291,40 @@ class _InvoicesPageState extends State<InvoicesPage> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppColors.borderLowContrast),
           ),
-              child: DropdownButtonFormField<String>(
-                initialValue: items.contains(value) ? value : items.first,
-                decoration: const InputDecoration.collapsed(hintText: ''),
-                icon: Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.textMuted),
-                isExpanded: true,
-                dropdownColor: AppColors.surfaceCard,
-                style: GoogleFonts.inter(
-                  color: AppColors.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-                items: items
-                    .map(
-                      (item) => DropdownMenuItem<String>(
-                        value: item,
-                        child: Text(item),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (val) {
-                  if (val == null) return;
-                  setState(() {
-                    _selectedDate = null;
-                    if (label == 'Year') {
-                      selectedYear = val;
-                    } else {
-                      selectedMonth = val;
-                    }
-                    isAllSelected = false;
-                  });
-                },
-              ),
+          child: DropdownButtonFormField<String>(
+            initialValue: items.contains(value) ? value : items.first,
+            decoration: const InputDecoration.collapsed(hintText: ''),
+            icon: Icon(
+              Icons.keyboard_arrow_down,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
+            isExpanded: true,
+            dropdownColor: AppColors.surfaceCard,
+            style: GoogleFonts.inter(
+              color: AppColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            items: items
+                .map(
+                  (item) =>
+                      DropdownMenuItem<String>(value: item, child: Text(item)),
+                )
+                .toList(),
+            onChanged: (val) {
+              if (val == null) return;
+              setState(() {
+                _selectedDate = null;
+                if (label == 'Year') {
+                  selectedYear = val;
+                } else {
+                  selectedMonth = val;
+                }
+                isAllSelected = false;
+              });
+            },
+          ),
         ),
       ],
     );
@@ -278,7 +344,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
         decoration: BoxDecoration(
           color: isAllSelected ? AppColors.accent : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isAllSelected ? AppColors.accent : AppColors.borderLowContrast),
+          border: Border.all(
+            color: isAllSelected
+                ? AppColors.accent
+                : AppColors.borderLowContrast,
+          ),
         ),
         child: Text(
           'ALL',
@@ -300,7 +370,9 @@ class _InvoicesPageState extends State<InvoicesPage> {
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLowContrast.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppColors.borderLowContrast.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,7 +394,10 @@ class _InvoicesPageState extends State<InvoicesPage> {
                   const SizedBox(height: 4),
                   Text(
                     _formatDate(invoice.date),
-                    style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12),
+                    style: GoogleFonts.inter(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -338,7 +413,10 @@ class _InvoicesPageState extends State<InvoicesPage> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  _buildStatusPill(invoice.status),
+                  GestureDetector(
+                    onTap: () => _toggleStatus(invoice),
+                    child: _buildStatusPill(invoice.status),
+                  ),
                 ],
               ),
             ],
@@ -358,7 +436,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+                icon: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textMuted,
+                  size: 20,
+                ),
                 onPressed: () => _openDetails(invoice),
               ),
             ],
@@ -376,17 +458,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
         color = AppColors.successMuted;
         label = 'PAID';
         break;
-      case InvoiceStatus.overdue:
-        color = AppColors.errorMuted;
-        label = 'OVERDUE';
-        break;
-      case InvoiceStatus.draft:
+
+
+      case InvoiceStatus.outstanding:
         color = AppColors.accent;
-        label = 'DRAFT';
-        break;
-      case InvoiceStatus.sent:
-        color = AppColors.accent;
-        label = 'SENT';
+        label = 'OUTSTANDING';
         break;
     }
 
@@ -408,17 +484,12 @@ class _InvoicesPageState extends State<InvoicesPage> {
     );
   }
 
-  Widget _buildStatsTiles() {
-    return Row(
-      children: [
-        Expanded(child: _buildStatTile('OUTSTANDING', _currency(_outstandingTotal), Icons.pending_actions, AppColors.errorMuted)),
-        const SizedBox(width: 16),
-        Expanded(child: _buildStatTile('COLLECTED', _currency(_collectedTotal), Icons.account_balance_wallet, AppColors.successMuted)),
-      ],
-    );
-  }
-
-  Widget _buildStatTile(String label, String value, IconData icon, Color accentColor) {
+  Widget _buildStatTile(
+    String label,
+    String value,
+    IconData icon,
+    Color accentColor,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -454,20 +525,6 @@ class _InvoicesPageState extends State<InvoicesPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFAB() {
-    return Positioned(
-      bottom: 24,
-      right: 16,
-      child: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: AppColors.accent,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
       ),
     );
   }
@@ -541,17 +598,62 @@ class _InvoicesPageState extends State<InvoicesPage> {
     );
   }
 
-  List<String> get _availableYears => _cachedYears;
+  List<String> _availableYears(List<InvoiceModel> invoices) {
+    final years =
+        invoices.map((invoice) => invoice.date.year.toString()).toSet().toList()
+          ..sort((a, b) => b.compareTo(a));
 
-  List<String> get _availableMonths => const ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    return years.isEmpty ? ['2026'] : years;
+  }
+
+  List<String> get _availableMonths => const [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ];
 
   String _monthLabel(int month) {
-    const labels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const labels = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
     return labels[month - 1];
   }
 
   String _formatDate(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
@@ -559,9 +661,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
 
   void _openDetails(InvoiceModel invoice) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _InvoiceDetailPage(invoice: invoice),
-      ),
+      MaterialPageRoute(builder: (_) => _InvoiceDetailPage(invoice: invoice)),
     );
   }
 }
@@ -586,7 +686,9 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
 
   bool get _isEditable {
     final now = DateTime.now();
-    return _invoice.date.year == now.year && _invoice.date.month == now.month && _invoice.date.day == now.day;
+    return _invoice.date.year == now.year &&
+        _invoice.date.month == now.month &&
+        _invoice.date.day == now.day;
   }
 
   @override
@@ -598,14 +700,14 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
         elevation: 0,
         title: Text(
           _invoice.invoiceId ?? _invoice.id,
-          style: GoogleFonts.montserrat(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+          style: GoogleFonts.montserrat(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         actions: [
           if (_isEditable)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: _openEditor,
-            ),
+            IconButton(icon: const Icon(Icons.edit), onPressed: _openEditor),
           const SizedBox(width: 8),
         ],
       ),
@@ -616,10 +718,17 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
           children: [
             Text(
               _invoice.customerName,
-              style: GoogleFonts.montserrat(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
+              style: GoogleFonts.montserrat(
+                color: AppColors.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 4),
-            Text(_formatDate(_invoice.date), style: GoogleFonts.inter(color: AppColors.textMuted)),
+            Text(
+              _formatDate(_invoice.date),
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -631,17 +740,40 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Line Items', style: GoogleFonts.inter(color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+                  Text(
+                    'Line Items',
+                    style: GoogleFonts.inter(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   ..._invoice.items.map(
                     (item) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Row(
                         children: [
-                          Expanded(child: Text(item.name, style: GoogleFonts.inter(color: AppColors.textPrimary))),
-                          Text('${item.quantity} x', style: GoogleFonts.inter(color: AppColors.textMuted)),
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: GoogleFonts.inter(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${item.quantity} x',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                           const SizedBox(width: 8),
-                          Text('\$${item.unitPrice.toStringAsFixed(2)}', style: GoogleFonts.jetBrainsMono(color: AppColors.textPrimary)),
+                          Text(
+                            '\$${item.unitPrice.toStringAsFixed(2)}',
+                            style: GoogleFonts.jetBrainsMono(
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -650,8 +782,21 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Total', style: GoogleFonts.inter(color: AppColors.textMuted, fontWeight: FontWeight.w700)),
-                      Text('\$${_invoice.totalAmount.toStringAsFixed(2)}', style: GoogleFonts.montserrat(color: AppColors.accent, fontSize: 18, fontWeight: FontWeight.w700)),
+                      Text(
+                        'Total',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '\$${_invoice.totalAmount.toStringAsFixed(2)}',
+                        style: GoogleFonts.montserrat(
+                          color: AppColors.accent,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -668,19 +813,25 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surfaceCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) {
         final controllers = _invoice.items
             .map(
               (item) => {
                 'qty': TextEditingController(text: item.quantity.toString()),
-                'price': TextEditingController(text: item.unitPrice.toStringAsFixed(2)),
+                'price': TextEditingController(
+                  text: item.unitPrice.toStringAsFixed(2),
+                ),
               },
             )
             .toList();
 
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: StatefulBuilder(
             builder: (context, setState) {
               return Padding(
@@ -689,7 +840,14 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Edit Line Items', style: GoogleFonts.montserrat(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text(
+                      'Edit Line Items',
+                      style: GoogleFonts.montserrat(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     ...List.generate(_invoice.items.length, (index) {
                       final item = _invoice.items[index];
@@ -699,15 +857,26 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Row(
                           children: [
-                            Expanded(child: Text(item.name, style: GoogleFonts.inter(color: AppColors.textPrimary))),
+                            Expanded(
+                              child: Text(
+                                item.name,
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             SizedBox(
                               width: 72,
                               child: TextField(
                                 controller: qtyController,
                                 keyboardType: TextInputType.number,
-                                style: GoogleFonts.inter(color: AppColors.textPrimary),
-                                decoration: const InputDecoration(labelText: 'Qty'),
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textPrimary,
+                                ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Qty',
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -715,9 +884,16 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                               width: 100,
                               child: TextField(
                                 controller: priceController,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                style: GoogleFonts.inter(color: AppColors.textPrimary),
-                                decoration: const InputDecoration(labelText: 'Price'),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textPrimary,
+                                ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Price',
+                                ),
                               ),
                             ),
                           ],
@@ -728,15 +904,31 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: () {
                             final updated = <InvoiceLine>[];
                             for (var i = 0; i < _invoice.items.length; i++) {
                               final current = _invoice.items[i];
-                              final qty = int.tryParse(controllers[i]['qty']!.text) ?? current.quantity;
-                              final price = double.tryParse(controllers[i]['price']!.text) ?? current.unitPrice;
-                              updated.add(InvoiceLine(name: current.name, quantity: qty, unitPrice: price));
+                              final qty =
+                                  int.tryParse(controllers[i]['qty']!.text) ??
+                                  current.quantity;
+                              final price =
+                                  double.tryParse(
+                                    controllers[i]['price']!.text,
+                                  ) ??
+                                  current.unitPrice;
+                              updated.add(
+                                InvoiceLine(
+                                  name: current.name,
+                                  quantity: qty,
+                                  unitPrice: price,
+                                ),
+                              );
                             }
                             Navigator.of(ctx).pop(updated);
                           },
@@ -761,8 +953,17 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
       userUid: '..', // TODO: to be fixed
       invoiceId: _invoice.invoiceId,
       date: _invoice.date,
+      status: _invoice.status,
       createdAt: _invoice.createdAt,
-      items: edited.map((line) => ReceiptLineItem(item: line.name, quantity: line.quantity, unitPrice: line.unitPrice)).toList(),
+      items: edited
+          .map(
+            (line) => ReceiptLineItem(
+              item: line.name,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+            ),
+          )
+          .toList(),
     );
 
     await ReceiptStore.instance.updateReceipt(updatedReceipt);
@@ -774,7 +975,15 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
         date: updatedReceipt.date,
         totalAmount: updatedReceipt.total,
         status: _invoice.status,
-        items: updatedReceipt.items.map((line) => InvoiceLine(name: line.item, quantity: line.quantity, unitPrice: line.unitPrice)).toList(),
+        items: updatedReceipt.items
+            .map(
+              (line) => InvoiceLine(
+                name: line.item,
+                quantity: line.quantity,
+                unitPrice: line.unitPrice,
+              ),
+            )
+            .toList(),
         createdAt: updatedReceipt.createdAt,
         invoiceId: updatedReceipt.invoiceId,
       );
@@ -782,7 +991,20 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
   }
 
   String _formatDate(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }
