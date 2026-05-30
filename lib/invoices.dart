@@ -14,7 +14,7 @@ class InvoicesPage extends StatefulWidget {
 
 class _InvoicesPageState extends State<InvoicesPage> {
   // final List<InvoiceModel> _invoices = [];
-  String selectedYear = '2026';
+  String selectedYear = DateTime.now().year.toString();
   String selectedMonth = 'MAY';
   bool isAllSelected = false;
   DateTime? _selectedDate;
@@ -459,7 +459,6 @@ class _InvoicesPageState extends State<InvoicesPage> {
         label = 'PAID';
         break;
 
-
       case InvoiceStatus.outstanding:
         color = AppColors.accent;
         label = 'OUTSTANDING';
@@ -599,11 +598,13 @@ class _InvoicesPageState extends State<InvoicesPage> {
   }
 
   List<String> _availableYears(List<InvoiceModel> invoices) {
-    final years =
-        invoices.map((invoice) => invoice.date.year.toString()).toSet().toList()
-          ..sort((a, b) => b.compareTo(a));
+    final currentYear = DateTime.now().year;
+    final startYear = 2020;
 
-    return years.isEmpty ? ['2026'] : years;
+    return List.generate(
+      currentYear - startYear + 1,
+      (i) => (startYear + i).toString(),
+    ).reversed.toList();
   }
 
   List<String> get _availableMonths => const [
