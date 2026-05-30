@@ -14,9 +14,9 @@ class InvoicesPage extends StatefulWidget {
 
 class _InvoicesPageState extends State<InvoicesPage> {
   // final List<InvoiceModel> _invoices = [];
-  String selectedYear = DateTime.now().year.toString();
-  String selectedMonth = 'MAY';
-  bool isAllSelected = false;
+  String? selectedYear;
+  String? selectedMonth;
+  bool isAllSelected = true;
   DateTime? _selectedDate;
 
   Future<void> _toggleStatus(InvoiceModel invoice) async {
@@ -75,6 +75,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
         .map(
           (r) => InvoiceModel(
             id: r.id,
+            userUid: r.userUid,
             customerName: r.customerName,
             date: r.date,
             totalAmount: r.total,
@@ -98,11 +99,19 @@ class _InvoicesPageState extends State<InvoicesPage> {
   List<InvoiceModel> _visibleInvoices(List<InvoiceModel> invoices) {
     if (isAllSelected) return invoices;
 
-    Iterable<InvoiceModel> filtered = invoices.where((invoice) {
-      final monthMatches = _monthLabel(invoice.date.month) == selectedMonth;
-      final yearMatches = invoice.date.year.toString() == selectedYear;
-      return monthMatches && yearMatches;
-    });
+    Iterable<InvoiceModel> filtered = invoices;
+
+    if (selectedYear != null) {
+      filtered = filtered.where((invoice) {
+        return invoice.date.year.toString() == selectedYear;
+      });
+    }
+
+    if (selectedMonth != null) {
+      filtered = filtered.where((invoice) {
+        return _monthLabel(invoice.date.month) == selectedMonth;
+      });
+    }
 
     if (_selectedDate != null) {
       filtered = filtered.where((invoice) {
@@ -271,7 +280,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
     );
   }
 
-  Widget _buildDropdown(String label, String value, List<String> items) {
+  Widget _buildDropdown(String label, String? value, List<String> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -292,7 +301,14 @@ class _InvoicesPageState extends State<InvoicesPage> {
             border: Border.all(color: AppColors.borderLowContrast),
           ),
           child: DropdownButtonFormField<String>(
-            initialValue: items.contains(value) ? value : items.first,
+            initialValue:
+                (isAllSelected || value == null || !items.contains(value))
+                ? null
+                : value,
+            hint: Text(
+              "Select",
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
             decoration: const InputDecoration.collapsed(hintText: ''),
             icon: Icon(
               Icons.keyboard_arrow_down,
@@ -333,10 +349,10 @@ class _InvoicesPageState extends State<InvoicesPage> {
   Widget _buildAllToggle() {
     return GestureDetector(
       onTap: () => setState(() {
-        isAllSelected = !isAllSelected;
-        if (isAllSelected) {
-          _selectedDate = null;
-        }
+        isAllSelected = true;
+        selectedYear = null;
+        selectedMonth = null;
+        _selectedDate = null;
       }),
       child: Container(
         margin: const EdgeInsets.only(top: 18),
@@ -951,7 +967,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
     final updatedReceipt = ReceiptRecord(
       id: _invoice.id,
       customerName: _invoice.customerName,
-      userUid: '..', // TODO: to be fixed
+      userUid: _invoice.userUid,
       invoiceId: _invoice.invoiceId,
       date: _invoice.date,
       status: _invoice.status,
@@ -972,6 +988,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
     setState(() {
       _invoice = InvoiceModel(
         id: updatedReceipt.id,
+        userUid: updatedReceipt.userUid,
         customerName: updatedReceipt.customerName,
         date: updatedReceipt.date,
         totalAmount: updatedReceipt.total,

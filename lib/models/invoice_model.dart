@@ -5,13 +5,16 @@ class InvoiceLine {
   final int quantity;
   final double unitPrice;
 
-  const InvoiceLine({required this.name, required this.quantity, required this.unitPrice});
+  const InvoiceLine({
+    required this.name,
+    required this.quantity,
+    required this.unitPrice,
+  });
 }
-
-
 
 class InvoiceModel {
   final String id;
+  final String userUid;
   final String customerName;
   final DateTime date;
   final double totalAmount;
@@ -22,6 +25,7 @@ class InvoiceModel {
 
   const InvoiceModel({
     required this.id,
+    required this.userUid,
     required this.customerName,
     required this.date,
     required this.totalAmount,
