@@ -236,7 +236,6 @@ class ReceiptRecord {
   final String userUid;
   final InvoiceStatus status;
 
-
   const ReceiptRecord({
     required this.id,
     required this.userUid,
@@ -251,12 +250,18 @@ class ReceiptRecord {
   double get subtotal => items.fold<double>(0, (sum, item) => sum + item.total);
   double get tax => subtotal * 0.1;
   double get total => subtotal + tax;
+  double get totalCost => items.fold<double>(
+    0,
+    (sum, item) => sum + (item.costPrice * item.quantity),
+  );
+  double get profit => subtotal - totalCost;
+  
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'customerName': customerName,
     'invoiceId': invoiceId,
     'userUid': userUid,
-    'status':status.name,
+    'status': status.name,
     // Store as real Firestore timestamps
     'date': Timestamp.fromDate(date),
     'createdAt': Timestamp.fromDate(createdAt),
@@ -293,19 +298,23 @@ class ReceiptLineItem {
   final String item;
   final int quantity;
   final double unitPrice;
+  final double costPrice;
 
   const ReceiptLineItem({
     required this.item,
     required this.quantity,
     required this.unitPrice,
+    required this.costPrice,
   });
 
   double get total => quantity * unitPrice;
+  double get profit => quantity * (unitPrice - costPrice);
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'item': item,
     'quantity': quantity,
     'unitPrice': unitPrice,
+    'costPrice': costPrice,
   };
 
   factory ReceiptLineItem.fromJson(Map<String, dynamic> json) =>
@@ -313,6 +322,7 @@ class ReceiptLineItem {
         item: json['item'] as String? ?? '',
         quantity: (json['quantity'] as num?)?.toInt() ?? 0,
         unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
+        costPrice: (json['costPrice'] as num?)?.toDouble() ?? 0,
       );
 }
 

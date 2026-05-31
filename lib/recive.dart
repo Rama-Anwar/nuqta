@@ -22,6 +22,7 @@ class _ReceivePageState extends State<ReceivePage> {
   final _itemController = TextEditingController();
   final _quantityController = TextEditingController(text: '1');
   final _unitPriceController = TextEditingController();
+  final _costPriceController = TextEditingController();
 
   final List<_ReceiptLine> _items = <_ReceiptLine>[];
   StreamSubscription<dynamic>? _incomingOrderSubscription;
@@ -42,6 +43,7 @@ class _ReceivePageState extends State<ReceivePage> {
     _itemController.dispose();
     _quantityController.dispose();
     _unitPriceController.dispose();
+    _costPriceController.dispose();
     super.dispose();
   }
 
@@ -54,23 +56,28 @@ class _ReceivePageState extends State<ReceivePage> {
     final name = _itemController.text.trim();
     final quantity = int.tryParse(_quantityController.text.trim()) ?? 0;
     final price = double.tryParse(_unitPriceController.text.trim()) ?? 0;
+    final costPrice = double.tryParse(_costPriceController.text.trim()) ?? 0;
 
     if (name.isEmpty || quantity <= 0 || price <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Add a valid item, quantity, and unit price.'),
-        ),
+        const SnackBar(content: Text('Add a valid item, quantity, and Price.')),
       );
       return;
     }
 
     setState(() {
       _items.add(
-        _ReceiptLine(item: name, quantity: quantity, unitPrice: price),
+        _ReceiptLine(
+          item: name,
+          quantity: quantity,
+          unitPrice: price,
+          costPrice: costPrice,
+        ),
       );
       _itemController.clear();
       _quantityController.text = '1';
       _unitPriceController.clear();
+      _costPriceController.clear();
     });
   }
 
@@ -173,6 +180,11 @@ class _ReceivePageState extends State<ReceivePage> {
       }
 
       final itemMap = Map<String, dynamic>.from(rawItem);
+      final cost = _readIncomingDouble(itemMap, <String>[
+        'cost',
+        'cost_price',
+        'costPrice',
+      ], defaultValue: 0.0);
       final name = _readIncomingString(itemMap, <String>[
         'name',
         'item',
@@ -197,7 +209,12 @@ class _ReceivePageState extends State<ReceivePage> {
       }
 
       parsedItems.add(
-        _ReceiptLine(item: name, quantity: quantity, unitPrice: price),
+        _ReceiptLine(
+          item: name,
+          quantity: quantity,
+          unitPrice: price,
+          costPrice: cost,
+        ),
       );
     }
 
@@ -266,6 +283,7 @@ class _ReceivePageState extends State<ReceivePage> {
               item: line.item,
               quantity: line.quantity,
               unitPrice: line.unitPrice,
+              costPrice: line.costPrice,
             ),
           )
           .toList(),
@@ -323,6 +341,7 @@ class _ReceivePageState extends State<ReceivePage> {
                         child: isDesktop
                             ? _DesktopLayout(
                                 customerController: _customerController,
+                                costPriceController: _costPriceController,
                                 invoiceController: _invoiceController,
                                 dateController: _dateController,
                                 itemController: _itemController,
@@ -340,6 +359,7 @@ class _ReceivePageState extends State<ReceivePage> {
                                 onSubmit: _submit,
                               )
                             : _MobileLayout(
+                                costPriceController: _costPriceController,
                                 customerController: _customerController,
                                 invoiceController: _invoiceController,
                                 dateController: _dateController,
@@ -448,6 +468,7 @@ class _TopAppBar extends StatelessWidget {
 
 class _DesktopLayout extends StatelessWidget {
   final TextEditingController customerController;
+  final TextEditingController costPriceController;
   final TextEditingController invoiceController;
   final TextEditingController dateController;
   final TextEditingController itemController;
@@ -466,6 +487,7 @@ class _DesktopLayout extends StatelessWidget {
 
   const _DesktopLayout({
     required this.customerController,
+    required this.costPriceController,
     required this.invoiceController,
     required this.dateController,
     required this.itemController,
@@ -546,10 +568,20 @@ class _DesktopLayout extends StatelessWidget {
                         Expanded(
                           child: _LabeledInput(
                             controller: unitPriceController,
-                            label: 'Unit Price',
+                            label: 'Price',
                             hint: '0.00',
                             mono: true,
                             isNumber: true,
+                            prefix: '\$',
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _LabeledInput(
+                            controller: costPriceController,
+                            label: "Cost",
+                            hint: "0.00",
+                            mono: true,
                             prefix: '\$',
                           ),
                         ),
@@ -609,6 +641,7 @@ class _MobileLayout extends StatelessWidget {
   final TextEditingController invoiceController;
   final TextEditingController dateController;
   final TextEditingController itemController;
+  final TextEditingController costPriceController;
   final TextEditingController quantityController;
   final TextEditingController unitPriceController;
   final List<_ReceiptLine> items;
@@ -623,6 +656,7 @@ class _MobileLayout extends StatelessWidget {
   final VoidCallback onSubmit;
 
   const _MobileLayout({
+    required this.costPriceController,
     required this.customerController,
     required this.invoiceController,
     required this.dateController,
@@ -699,11 +733,23 @@ class _MobileLayout extends StatelessWidget {
                   Expanded(
                     child: _LabeledInput(
                       controller: unitPriceController,
-                      label: 'Unit Price',
+                      label: 'Price',
                       hint: '0.00',
                       mono: true,
                       isNumber: true,
                       prefix: '\$ ',
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: _LabeledInput(
+                      controller: costPriceController,
+                      label: 'Cost',
+                      hint: '0.00',
+                      mono: true,
+                      isNumber: true,
+                      prefix: '\$',
                     ),
                   ),
                 ],
@@ -1641,14 +1687,17 @@ class _ReceiptLine {
   String item;
   int quantity;
   double unitPrice;
+  double costPrice;
 
   _ReceiptLine({
     required this.item,
     required this.quantity,
     required this.unitPrice,
+    this.costPrice = 0.0,
   });
 
   double get total => quantity * unitPrice;
+  double get profit => (unitPrice - costPrice) * quantity;
 }
 
 String _currency(double value) => 'JOD ${value.toStringAsFixed(2)}';

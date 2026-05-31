@@ -4,11 +4,13 @@ class InvoiceLine {
   final String name;
   final int quantity;
   final double unitPrice;
+  final double costPrice;
 
   const InvoiceLine({
     required this.name,
     required this.quantity,
     required this.unitPrice,
+    required this.costPrice,
   });
 }
 

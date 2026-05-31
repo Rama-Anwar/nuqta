@@ -86,6 +86,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                     name: it.item,
                     quantity: it.quantity,
                     unitPrice: it.unitPrice,
+                    costPrice: it.costPrice,
                   ),
                 )
                 .toList(),
@@ -380,6 +381,8 @@ class _InvoicesPageState extends State<InvoicesPage> {
   }
 
   Widget _buildInvoiceCard(InvoiceModel invoice) {
+    final costAmount = _invoiceCost(invoice);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -426,6 +429,15 @@ class _InvoicesPageState extends State<InvoicesPage> {
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Cost ${_currency(costAmount)}',
+                    style: GoogleFonts.inter(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -676,6 +688,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
 
   String _currency(double value) => '\$${value.toStringAsFixed(2)}';
 
+  double _invoiceCost(InvoiceModel invoice) => invoice.items.fold<double>(
+    0,
+    (sum, item) => sum + (item.costPrice * item.quantity),
+  );
+
   void _openDetails(InvoiceModel invoice) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => _InvoiceDetailPage(invoice: invoice)),
@@ -707,6 +724,11 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
         _invoice.date.month == now.month &&
         _invoice.date.day == now.day;
   }
+
+  double get _invoiceCost => _invoice.items.fold<double>(
+    0,
+    (sum, item) => sum + (item.costPrice * item.quantity),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -791,11 +813,40 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                               color: AppColors.textPrimary,
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Cost \$${item.costPrice.toStringAsFixed(2)}',
+                            style: GoogleFonts.jetBrainsMono(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
                   const Divider(color: Color(0x1AFFFFFF)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Cost',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '\$${_invoiceCost.toStringAsFixed(2)}',
+                        style: GoogleFonts.montserrat(
+                          color: AppColors.textMuted,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -841,6 +892,9 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                 'price': TextEditingController(
                   text: item.unitPrice.toStringAsFixed(2),
                 ),
+                'cost': TextEditingController(
+                  text: item.costPrice.toStringAsFixed(2),
+                ),
               },
             )
             .toList();
@@ -870,6 +924,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                       final item = _invoice.items[index];
                       final qtyController = controllers[index]['qty']!;
                       final priceController = controllers[index]['price']!;
+                      final costController = controllers[index]['cost']!;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Row(
@@ -898,7 +953,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                             ),
                             const SizedBox(width: 8),
                             SizedBox(
-                              width: 100,
+                              width: 86,
                               child: TextField(
                                 controller: priceController,
                                 keyboardType:
@@ -910,6 +965,23 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                                 ),
                                 decoration: const InputDecoration(
                                   labelText: 'Price',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 86,
+                              child: TextField(
+                                controller: costController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textPrimary,
+                                ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Cost',
                                 ),
                               ),
                             ),
@@ -939,11 +1011,17 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                                     controllers[i]['price']!.text,
                                   ) ??
                                   current.unitPrice;
+                              final cost =
+                                  double.tryParse(
+                                    controllers[i]['cost']!.text,
+                                  ) ??
+                                  current.costPrice;
                               updated.add(
                                 InvoiceLine(
                                   name: current.name,
                                   quantity: qty,
                                   unitPrice: price,
+                                  costPrice: cost,
                                 ),
                               );
                             }
@@ -978,6 +1056,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
               item: line.name,
               quantity: line.quantity,
               unitPrice: line.unitPrice,
+              costPrice: line.costPrice,
             ),
           )
           .toList(),
@@ -999,6 +1078,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                 name: line.item,
                 quantity: line.quantity,
                 unitPrice: line.unitPrice,
+                costPrice: line.costPrice,
               ),
             )
             .toList(),
