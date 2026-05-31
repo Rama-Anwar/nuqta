@@ -395,12 +395,15 @@ class _InvoicesPageState extends State<InvoicesPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
                     invoice.invoiceId ?? invoice.id,
@@ -754,6 +757,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
             Text(
               _invoice.customerName,
@@ -828,6 +832,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                   const Divider(color: Color(0x1AFFFFFF)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
                     children: [
                       Text(
                         'Cost',
