@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:invoice_ai/firebase_options.dart';
@@ -44,7 +45,10 @@ class MyApp extends StatelessWidget {
           activeIndex: 3,
         ),
       },
-      home: const LoginPage(),
+      home: FirebaseAuth.instance.currentUser != null
+          ? const DashPage()
+          : const LoginPage(),
+
     );
   }
 }
