@@ -185,11 +185,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
 
           final earningsTotal = visibleInvoices
               .where((invoice) => invoice.status == InvoiceStatus.paid)
-              .fold<double>(
-                0,
-                (sum, invoice) =>
-                    sum + (invoice.totalAmount - _invoiceCost(invoice)),
-              );
+              .fold<double>(0, (sum, invoice) => sum + invoice.totalProfit);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
@@ -291,7 +287,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                       SizedBox(
                         width: tileWidth,
                         child: _buildStatTile(
-                          'EARNINGS',
+                          'TOTAL PROFIT',
                           _currency(earningsTotal),
                           Icons.trending_up,
                           AppColors.accent,
@@ -874,6 +870,27 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                         style: GoogleFonts.montserrat(
                           color: AppColors.textMuted,
                           fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Profit',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '\$${_invoice.totalProfit.toStringAsFixed(2)}',
+                        style: GoogleFonts.montserrat(
+                          color: AppColors.accent,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

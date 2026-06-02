@@ -255,10 +255,12 @@ class ReceiptRecord {
     (sum, item) => sum + (item.costPrice * item.quantity),
   );
   double get profit => subtotal - totalCost;
+  double get totalProfit => profit;
   
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'customerName': customerName,
+    'customer_name': customerName,
     'invoiceId': invoiceId,
     'userUid': userUid,
     'status': status.name,
@@ -279,7 +281,10 @@ class ReceiptRecord {
     return ReceiptRecord(
       id: json['id'] as String? ?? '',
       userUid: json['userUid'] as String? ?? '',
-      customerName: json['customerName'] as String? ?? 'Unnamed Customer',
+      customerName:
+          (json['customer_name'] as String?) ??
+          (json['customerName'] as String?) ??
+          'عميل نُقطة',
       invoiceId: json['invoiceId'] as String?,
       date: _parseDate(json['date']),
       createdAt: _parseDate(json['createdAt']),
@@ -298,23 +303,25 @@ class ReceiptLineItem {
   final String item;
   final int quantity;
   final double unitPrice;
-  final double costPrice;
+  final double cost;
+  double get costPrice => cost;
 
   const ReceiptLineItem({
     required this.item,
     required this.quantity,
     required this.unitPrice,
-    required this.costPrice,
-  });
+    required double costPrice,
+  }) : cost = costPrice;
 
   double get total => quantity * unitPrice;
-  double get profit => quantity * (unitPrice - costPrice);
+  double get profit => quantity * (unitPrice - cost);
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'item': item,
     'quantity': quantity,
     'unitPrice': unitPrice,
-    'costPrice': costPrice,
+    'cost': cost,
+    'costPrice': cost,
   };
 
   factory ReceiptLineItem.fromJson(Map<String, dynamic> json) =>
@@ -322,7 +329,10 @@ class ReceiptLineItem {
         item: json['item'] as String? ?? '',
         quantity: (json['quantity'] as num?)?.toInt() ?? 0,
         unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
-        costPrice: (json['costPrice'] as num?)?.toDouble() ?? 0,
+        costPrice:
+            (json['cost'] as num?)?.toDouble() ??
+            (json['costPrice'] as num?)?.toDouble() ??
+            0,
       );
 }
 

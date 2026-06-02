@@ -103,6 +103,12 @@ class _ReceivePageState extends State<ReceivePage> {
     });
   }
 
+  void _updateItemCost(int index, String value) {
+    setState(() {
+      _items[index].costPrice = double.tryParse(value) ?? 0.0;
+    });
+  }
+
   void _handleIncomingOrder(dynamic incomingData) {
     if (!mounted) {
       return;
@@ -355,7 +361,8 @@ class _ReceivePageState extends State<ReceivePage> {
                                 onRemoveItem: _removeItem,
                                 onNameChanged: _updateItemName,
                                 onQtyChanged: _updateItemQuantity,
-                                onPriceChanged: _updateItemPrice,
+                                  onPriceChanged: _updateItemPrice,
+                                  onCostChanged: _updateItemCost,
                                 onSubmit: _submit,
                               )
                             : _MobileLayout(
@@ -374,7 +381,8 @@ class _ReceivePageState extends State<ReceivePage> {
                                 onRemoveItem: _removeItem,
                                 onNameChanged: _updateItemName,
                                 onQtyChanged: _updateItemQuantity,
-                                onPriceChanged: _updateItemPrice,
+                                  onPriceChanged: _updateItemPrice,
+                                  onCostChanged: _updateItemCost,
                                 onSubmit: _submit,
                               ),
                       ),
@@ -424,11 +432,7 @@ class _TopAppBar extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                IconButton(
-                  onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  color: AppPalette.onSurfaceVariant,
-                ),
+                const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
                     'New Intake / Receipt',
@@ -483,6 +487,7 @@ class _DesktopLayout extends StatelessWidget {
   final void Function(int index, String value) onNameChanged;
   final void Function(int index, String value) onQtyChanged;
   final void Function(int index, String value) onPriceChanged;
+  final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
 
   const _DesktopLayout({
@@ -502,6 +507,7 @@ class _DesktopLayout extends StatelessWidget {
     required this.onNameChanged,
     required this.onQtyChanged,
     required this.onPriceChanged,
+    required this.onCostChanged,
     required this.onSubmit,
   });
 
@@ -628,6 +634,7 @@ class _DesktopLayout extends StatelessWidget {
             onNameChanged: onNameChanged,
             onQtyChanged: onQtyChanged,
             onPriceChanged: onPriceChanged,
+            onCostChanged: onCostChanged,
             onSubmit: onSubmit,
           ),
         ),
@@ -653,6 +660,7 @@ class _MobileLayout extends StatelessWidget {
   final void Function(int index, String value) onNameChanged;
   final void Function(int index, String value) onQtyChanged;
   final void Function(int index, String value) onPriceChanged;
+  final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
 
   const _MobileLayout({
@@ -672,6 +680,7 @@ class _MobileLayout extends StatelessWidget {
     required this.onNameChanged,
     required this.onQtyChanged,
     required this.onPriceChanged,
+    required this.onCostChanged,
     required this.onSubmit,
   });
 
@@ -787,10 +796,15 @@ class _MobileLayout extends StatelessWidget {
           subtotal: subtotal,
           tax: tax,
           total: total,
+          totalCost: items.fold<double>(
+            0,
+            (sum, item) => sum + (item.costPrice * item.quantity),
+          ),
           onRemoveItem: onRemoveItem,
           onNameChanged: onNameChanged,
           onQtyChanged: onQtyChanged,
           onPriceChanged: onPriceChanged,
+          onCostChanged: onCostChanged,
         ),
       ],
     );
@@ -806,6 +820,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
   final void Function(int index, String value) onNameChanged;
   final void Function(int index, String value) onQtyChanged;
   final void Function(int index, String value) onPriceChanged;
+  final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
 
   const _ItemsPanelDesktop({
@@ -817,6 +832,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
     required this.onNameChanged,
     required this.onQtyChanged,
     required this.onPriceChanged,
+    required this.onCostChanged,
     required this.onSubmit,
   });
 
@@ -890,6 +906,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
                 onNameChanged: (value) => onNameChanged(index, value),
                 onQtyChanged: (value) => onQtyChanged(index, value),
                 onPriceChanged: (value) => onPriceChanged(index, value),
+                onCostChanged: (value) => onCostChanged(index, value),
                 onRemove: () => onRemoveItem(index),
               );
             }),
@@ -897,6 +914,10 @@ class _ItemsPanelDesktop extends StatelessWidget {
             total: total,
             subtotal: subtotal,
             tax: tax,
+            totalCost: items.fold<double>(
+              0,
+              (sum, item) => sum + (item.costPrice * item.quantity),
+            ),
             onSubmit: onSubmit,
           ),
         ],
@@ -909,21 +930,25 @@ class _ItemsPanelMobile extends StatelessWidget {
   final List<_ReceiptLine> items;
   final double subtotal;
   final double tax;
+  final double totalCost;
   final double total;
   final void Function(int index) onRemoveItem;
   final void Function(int index, String value) onNameChanged;
   final void Function(int index, String value) onQtyChanged;
   final void Function(int index, String value) onPriceChanged;
+  final void Function(int index, String value) onCostChanged;
 
   const _ItemsPanelMobile({
     required this.items,
     required this.subtotal,
     required this.tax,
+    required this.totalCost,
     required this.total,
     required this.onRemoveItem,
     required this.onNameChanged,
     required this.onQtyChanged,
     required this.onPriceChanged,
+    required this.onCostChanged,
   });
 
   @override
@@ -951,10 +976,11 @@ class _ItemsPanelMobile extends StatelessWidget {
                 onNameChanged: (value) => onNameChanged(index, value),
                 onQtyChanged: (value) => onQtyChanged(index, value),
                 onPriceChanged: (value) => onPriceChanged(index, value),
+                onCostChanged: (value) => onCostChanged(index, value),
                 onRemove: () => onRemoveItem(index),
               );
             }),
-          _MobileCompactTotals(subtotal: subtotal, tax: tax, total: total),
+          _MobileCompactTotals(subtotal: subtotal, tax: tax, total: total, totalCost: totalCost),
         ],
       ),
     );
@@ -965,12 +991,14 @@ class _DesktopTotalsSummary extends StatelessWidget {
   final double subtotal;
   final double tax;
   final double total;
+  final double totalCost;
   final VoidCallback onSubmit;
 
   const _DesktopTotalsSummary({
     required this.subtotal,
     required this.tax,
     required this.total,
+    required this.totalCost,
     required this.onSubmit,
   });
 
@@ -990,6 +1018,8 @@ class _DesktopTotalsSummary extends StatelessWidget {
           const SizedBox(height: 12),
           const Divider(color: AppPalette.borderLowContrast, height: 1),
           const SizedBox(height: 12),
+          _SummaryRow(label: 'Total Cost', value: _currency(totalCost)),
+          const SizedBox(height: 8),
           _SummaryRow(label: 'Total', value: _currency(total), bold: true),
           const SizedBox(height: 16),
           SizedBox(
@@ -1031,11 +1061,13 @@ class _MobileCompactTotals extends StatelessWidget {
   final double subtotal;
   final double tax;
   final double total;
+  final double totalCost;
 
   const _MobileCompactTotals({
     required this.subtotal,
     required this.tax,
     required this.total,
+    required this.totalCost,
   });
 
   @override
@@ -1263,6 +1295,7 @@ class _ItemRow extends StatelessWidget {
   final ValueChanged<String> onNameChanged;
   final ValueChanged<String> onQtyChanged;
   final ValueChanged<String> onPriceChanged;
+  final ValueChanged<String> onCostChanged;
   final VoidCallback onRemove;
 
   const _ItemRow({
@@ -1272,6 +1305,7 @@ class _ItemRow extends StatelessWidget {
     required this.onNameChanged,
     required this.onQtyChanged,
     required this.onPriceChanged,
+    required this.onCostChanged,
     required this.onRemove,
   });
 
@@ -1345,59 +1379,148 @@ class _ItemRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 130,
+            width: 120,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  'Price',
-                  style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: AppPalette.surfaceCard,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Price',
+                        style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: 80,
+                        child: TextFormField(
+                          initialValue: line.unitPrice.toStringAsFixed(2),
+                          onChanged: onPriceChanged,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppPalette.textPrimary,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            isCollapsed: true,
+                            hintText: '0.00',
+                            hintStyle: TextStyle(color: AppPalette.textMuted),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 4),
-                TextFormField(
-                  initialValue: line.unitPrice.toStringAsFixed(2),
-                  onChanged: onPriceChanged,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: AppPalette.surfaceCard,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppPalette.textPrimary,
-                    fontFamily: 'monospace',
-                  ),
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    border: InputBorder.none,
-                    isCollapsed: true,
-                    hintText: '0.00',
-                    hintStyle: TextStyle(color: AppPalette.textMuted),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Cost',
+                        style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: 80,
+                        child: TextFormField(
+                          initialValue: line.costPrice.toStringAsFixed(2),
+                          onChanged: onCostChanged,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppPalette.textPrimary,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            isCollapsed: true,
+                            hintText: '0.00',
+                            hintStyle: TextStyle(color: AppPalette.textMuted),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
           SizedBox(
-            width: 140,
+            width: 160,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
-                      'Total',
-                      style: TextStyle(
-                        color: AppPalette.textMuted,
-                        fontSize: 11,
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: AppPalette.surfaceCard,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text(
+                            'Total',
+                            style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _currency(line.total),
+                            style: const TextStyle(
+                              color: AppPalette.textPrimary,
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _currency(line.total),
-                      style: const TextStyle(
-                        color: AppPalette.textPrimary,
-                        fontFamily: 'monospace',
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: AppPalette.surfaceCard,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text(
+                            'Profit',
+                            style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _currency(line.profit),
+                            style: const TextStyle(
+                              color: AppPalette.textPrimary,
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1424,6 +1547,7 @@ class _MobileItemCard extends StatelessWidget {
   final ValueChanged<String> onNameChanged;
   final ValueChanged<String> onQtyChanged;
   final ValueChanged<String> onPriceChanged;
+  final ValueChanged<String> onCostChanged;
   final VoidCallback onRemove;
 
   const _MobileItemCard({
@@ -1433,6 +1557,7 @@ class _MobileItemCard extends StatelessWidget {
     required this.onNameChanged,
     required this.onQtyChanged,
     required this.onPriceChanged,
+    required this.onCostChanged,
     required this.onRemove,
   });
 
@@ -1506,21 +1631,90 @@ class _MobileItemCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _MobileEditableStatBlock(
-                  label: 'Price',
-                  value: line.unitPrice.toStringAsFixed(2),
-                  onChanged: onPriceChanged,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: AppPalette.surfaceCard,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Price',
+                        style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: 80,
+                        child: TextFormField(
+                          initialValue: line.unitPrice.toStringAsFixed(2),
+                          onChanged: onPriceChanged,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppPalette.textPrimary,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            isCollapsed: true,
+                            hintText: '0.00',
+                            hintStyle: TextStyle(color: AppPalette.textMuted),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Cost',
+                        style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                      ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: 80,
+                        child: TextFormField(
+                          initialValue: line.costPrice.toStringAsFixed(2),
+                          onChanged: onCostChanged,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppPalette.textPrimary,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            isCollapsed: true,
+                            hintText: '0.00',
+                            hintStyle: TextStyle(color: AppPalette.textMuted),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _MobileStatBlock(
-                  label: 'Total',
-                  value: _currency(line.total),
+                child: Column(
+                  children: [
+                    Transform.translate(
+                      offset: const Offset(0, -6),
+                      child: _MobileStatBlock(
+                        label: 'Total',
+                        value: _currency(line.total),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _MobileStatBlock(
+                      label: 'Profit',
+                      value: _currency(line.profit),
+                    ),
+                  ],
                 ),
               ),
             ],
