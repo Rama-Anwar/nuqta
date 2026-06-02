@@ -183,6 +183,14 @@ class _InvoicesPageState extends State<InvoicesPage> {
               .where((invoice) => invoice.status == InvoiceStatus.paid)
               .fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
 
+          final earningsTotal = visibleInvoices
+              .where((invoice) => invoice.status == InvoiceStatus.paid)
+              .fold<double>(
+                0,
+                (sum, invoice) =>
+                    sum + (invoice.totalAmount - _invoiceCost(invoice)),
+              );
+
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
             children: [
@@ -250,28 +258,48 @@ class _InvoicesPageState extends State<InvoicesPage> {
 
               const SizedBox(height: 24),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatTile(
-                      'OUTSTANDING',
-                      _currency(outstandingTotal),
-                      Icons.pending_actions,
-                      AppColors.errorMuted,
-                    ),
-                  ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final tileWidth = constraints.maxWidth >= 435
+                      ? (constraints.maxWidth - 32) / 3
+                      : constraints.maxWidth >= 290
+                      ? (constraints.maxWidth - 16) / 2
+                      : constraints.maxWidth;
 
-                  const SizedBox(width: 16),
-
-                  Expanded(
-                    child: _buildStatTile(
-                      'COLLECTED',
-                      _currency(collectedTotal),
-                      Icons.account_balance_wallet,
-                      AppColors.successMuted,
-                    ),
-                  ),
-                ],
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      SizedBox(
+                        width: tileWidth,
+                        child: _buildStatTile(
+                          'OUTSTANDING',
+                          _currency(outstandingTotal),
+                          Icons.pending_actions,
+                          AppColors.errorMuted,
+                        ),
+                      ),
+                      SizedBox(
+                        width: tileWidth,
+                        child: _buildStatTile(
+                          'COLLECTED',
+                          _currency(collectedTotal),
+                          Icons.account_balance_wallet,
+                          AppColors.successMuted,
+                        ),
+                      ),
+                      SizedBox(
+                        width: tileWidth,
+                        child: _buildStatTile(
+                          'EARNINGS',
+                          _currency(earningsTotal),
+                          Icons.trending_up,
+                          AppColors.accent,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           );
