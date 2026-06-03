@@ -1,9 +1,9 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
-Future<void> sendEmail({
-  required String name,
-  required String email,
+Future<void> sendSupportEmail({
+  required String issueType,
   required String message,
 }) async {
   const serviceId = "service_0iioitb";
@@ -19,13 +19,15 @@ Future<void> sendEmail({
       "service_id": serviceId,
       "template_id": templateId,
       "user_id": publicKey,
-      "template_params": {"name": name, "email": email, "message": message},
+      "template_params": {
+        "title": "Nuqta Support Request - $issueType",
+        "message": message,
+        "to_email": "rama2kalloub@gmail.com",
+      },
     }),
   );
 
-  if (response.statusCode == 200) {
-    print("Email sent successfully");
-  } else {
-    print("Failed: ${response.body}");
+  if (response.statusCode != 200) {
+    throw Exception("Failed to send email: ${response.body}");
   }
 }
