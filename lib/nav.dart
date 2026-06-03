@@ -8,6 +8,7 @@ class AppRoutes {
   static const String receipts = '/receipts';
   static const String invoices = '/invoices';
   static const String profile = '/profile';
+  static const String support = '/support';
 }
 
 class AppBottomNavBar extends StatelessWidget {
@@ -34,7 +35,9 @@ class AppBottomNavBar extends StatelessWidget {
           children: List.generate(_NavEntry.entries.length, (index) {
             final entry = _NavEntry.entries[index];
             final isActive = index == activeIndex;
-            final color = isActive ? const Color(0xFFEE671C) : const Color(0xFFDEE2E6).withValues(alpha: 0.62);
+            final color = isActive
+                ? const Color(0xFFEE671C)
+                : const Color(0xFFDEE2E6).withValues(alpha: 0.62);
 
             return Expanded(
               child: InkWell(
@@ -90,7 +93,11 @@ class SectionPlaceholderPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.construction_rounded, size: 56, color: Color(0xFFEE671C)),
+                const Icon(
+                  Icons.construction_rounded,
+                  size: 56,
+                  color: Color(0xFFEE671C),
+                ),
                 const SizedBox(height: 16),
                 Text(
                   title,
@@ -126,12 +133,32 @@ class _NavEntry {
   final IconData icon;
   final String route;
 
-  const _NavEntry({required this.label, required this.icon, required this.route});
+  const _NavEntry({
+    required this.label,
+    required this.icon,
+    required this.route,
+  });
 
   static const entries = <_NavEntry>[
-    _NavEntry(label: 'Dashboard', icon: Icons.dashboard_rounded, route: AppRoutes.dash),
-    _NavEntry(label: 'Receipts', icon: Icons.receipt_long_rounded, route: AppRoutes.receipts),
-    _NavEntry(label: 'Invoices', icon: Icons.description_rounded, route: AppRoutes.invoices),
-    _NavEntry(label: 'Profile', icon: Icons.person_rounded, route: AppRoutes.profile),
+    _NavEntry(
+      label: 'Dashboard',
+      icon: Icons.dashboard_rounded,
+      route: AppRoutes.dash,
+    ),
+    _NavEntry(
+      label: 'Receipts',
+      icon: Icons.receipt_long_rounded,
+      route: AppRoutes.receipts,
+    ),
+    _NavEntry(
+      label: 'Invoices',
+      icon: Icons.description_rounded,
+      route: AppRoutes.invoices,
+    ),
+    _NavEntry(
+      label: 'Profile',
+      icon: Icons.person_rounded,
+      route: AppRoutes.profile,
+    ),
   ];
 }

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:invoice_ai/firebase_options.dart';
+import 'package:invoice_ai/profile.dart';
 
 import 'login.dart';
 import 'dash.dart';
@@ -9,6 +10,7 @@ import 'invoices.dart';
 import 'nav.dart';
 import 'recive.dart';
 import 'services/local_server_service.dart';
+import 'technical_support.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,16 +41,12 @@ class MyApp extends StatelessWidget {
         AppRoutes.dash: (_) => const DashPage(),
         AppRoutes.receipts: (_) => const ReceivePage(),
         AppRoutes.invoices: (_) => const InvoicesPage(),
-        AppRoutes.profile: (_) => const SectionPlaceholderPage(
-          title: 'Profile',
-          subtitle: 'Account settings and user preferences are coming here.',
-          activeIndex: 3,
-        ),
+        AppRoutes.profile: (_) => const ProfileScreen(),
+        AppRoutes.support: (_) => const TechnicalSupportPage(),
       },
       home: FirebaseAuth.instance.currentUser != null
-          ? const DashPage()
+          ? const LoginPage()
           : const LoginPage(),
-
     );
   }
 }
