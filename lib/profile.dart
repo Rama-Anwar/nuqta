@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:invoice_ai/helper/getCurrentUserProfile.dart';
+import 'package:invoice_ai/models/user_profile_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'nav.dart';
 
@@ -23,6 +27,35 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String selectedLanguage = 'ENGLISH';
+  UserProfile? profile;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+Future<void> _loadProfile() async {
+    try {
+      print("Loading profile...");
+
+      profile = await getCurrentUserProfile();
+
+      print("Profile loaded: $profile");
+
+      setState(() {
+        isLoading = false;
+      });
+    } catch (e, stackTrace) {
+      print("ERROR: $e");
+      print(stackTrace);
+
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,53 +88,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Divider(color: AppColors.borderLowContrast, height: 1),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
-        children: [
-          _buildProfileHeader(),
-          const SizedBox(height: 28),
-          _buildSectionCard(
-            title: 'BUSINESS',
-            child: Column(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
               children: [
-                _buildInfoRow(
-                  label: 'Registered name',
-                  value: 'Nuqta Wholesale LLC',
-                  icon: Icons.apartment_outlined,
+                _buildProfileHeader(),
+                const SizedBox(height: 28),
+                _buildSectionCard(
+                  title: 'BUSINESS',
+                  child: Column(
+                    children: [
+                      _buildInfoRow(
+                        label: 'Registered name',
+                        value: profile?.name ?? 'Unknown Business',
+                        icon: Icons.apartment_outlined,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildSectionCard(title: 'PLAN', child: _buildPlanSection()),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'TOOLS',
+                  child: Column(
+                    children: [
+                      _buildActionRow(
+                        icon: Icons.inventory_2_outlined,
+                        title: 'Inventory Sheet',
+                        subtitle: 'Manage stock and products',
+                        onTap: () async {
+                          final url = Uri.parse(profile!.sheetUrl);
+                          await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        },
+                      ),
+                      _buildDivider(),
+                      _buildActionRow(
+                        icon: Icons.support_agent_outlined,
+                        title: 'Technical Support',
+                        subtitle: 'Contact help desk',
+                        onTap: () =>
+                            Navigator.of(context).pushNamed(AppRoutes.support),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'SETTINGS',
+                  child: _buildLanguageRow(),
+                ),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'ACCOUNT',
+                  child: _buildAccountSection(),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildSectionCard(title: 'PLAN', child: _buildPlanSection()),
-          const SizedBox(height: 16),
-          _buildSectionCard(
-            title: 'TOOLS',
-            child: Column(
-              children: [
-                _buildActionRow(
-                  icon: Icons.inventory_2_outlined,
-                  title: 'Inventory Sheet',
-                  subtitle: 'Manage stock and products',
-                  onTap: () {},
-                ),
-                _buildDivider(),
-                _buildActionRow(
-                  icon: Icons.support_agent_outlined,
-                  title: 'Technical Support',
-                  subtitle: 'Contact help desk',
-                  onTap: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.support),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildSectionCard(title: 'SETTINGS', child: _buildLanguageRow()),
-          const SizedBox(height: 16),
-          _buildSectionCard(title: 'ACCOUNT', child: _buildAccountSection()),
-        ],
-      ),
       bottomNavigationBar: const AppBottomNavBar(activeIndex: 3),
     );
   }
@@ -125,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Nuqta Wholesale LLC',
+                profile?.name ?? 'Unknown Business',
                 style: GoogleFonts.montserrat(
                   color: AppColors.textMain,
                   fontSize: 21,
@@ -134,7 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Al Quoz 3, Dubai, UAE',
+                profile?.address ?? '',
                 style: GoogleFonts.inter(
                   color: AppColors.textDim,
                   fontSize: 13,
@@ -248,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Billing: Dec 12, 2024',
+                    'Billing: ${DateFormat('d MMM yyyy').format(profile!.billingDate)}',
                     style: GoogleFonts.inter(
                       color: AppColors.textDim,
                       fontSize: 12,
