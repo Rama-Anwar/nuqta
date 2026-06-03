@@ -81,6 +81,14 @@ class ReceiptStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Deletes a receipt from Firestore and removes it from the local cache.
+  Future<void> deleteReceipt(String id) async {
+    await ensureLoaded();
+    await _col.doc(id).delete();
+    _receipts.removeWhere((r) => r.id == id);
+    notifyListeners();
+  }
+
   // ─── invoice-id helpers ───────────────────────────────────────────────────
 
   ReceiptRecord _ensureSequentialInvoiceId(
@@ -248,8 +256,8 @@ class ReceiptRecord {
   });
 
   double get subtotal => items.fold<double>(0, (sum, item) => sum + item.total);
-  double get tax => subtotal * 0.1;
-  double get total => subtotal + tax;
+  double get tax => 0.0;
+  double get total => subtotal;
   double get totalCost => items.fold<double>(
     0,
     (sum, item) => sum + (item.costPrice * item.quantity),

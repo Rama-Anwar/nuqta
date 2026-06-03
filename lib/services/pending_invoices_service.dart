@@ -1,0 +1,126 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+/// A lightweight model representing one document from the
+/// top-level `pending_invoices` Firestore collection.
+class PendingInvoice {
+  final String docId;
+  final String customerName;
+  final String invoiceId;
+  final String status;
+  final List<PendingInvoiceItem> items;
+
+  const PendingInvoice({
+    required this.docId,
+    required this.customerName,
+    required this.invoiceId,
+    required this.status,
+    required this.items,
+  });
+
+  factory PendingInvoice.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? {};
+
+    // invoice_id may arrive as a number or a string from n8n
+    final rawId = data['invoice_id'];
+    final invoiceIdStr =
+        rawId == null ? '' : rawId.toString();
+
+    final rawItems = data['items'];
+    final items = <PendingInvoiceItem>[];
+    if (rawItems is List) {
+      for (final raw in rawItems) {
+        if (raw is Map) {
+          items.add(PendingInvoiceItem.fromMap(Map<String, dynamic>.from(raw)));
+        }
+      }
+    }
+
+    return PendingInvoice(
+      docId: doc.id,
+      customerName: (data['customer_name'] as String?) ?? 'Unknown',
+      invoiceId: invoiceIdStr,
+      status: (data['status'] as String?) ?? 'pending_review',
+      items: items,
+    );
+  }
+}
+
+class PendingInvoiceItem {
+  final String item;
+  final int qty;
+  final double price;
+  final double cost;
+
+  const PendingInvoiceItem({
+    required this.item,
+    required this.qty,
+    required this.price,
+    required this.cost,
+  });
+
+  factory PendingInvoiceItem.fromMap(Map<String, dynamic> map) {
+    double _d(dynamic v) {
+      if (v is num) return v.toDouble();
+      return double.tryParse(v?.toString() ?? '') ?? 0.0;
+    }
+
+    int _i(dynamic v) {
+      if (v is num) return v.toInt();
+      return int.tryParse(v?.toString() ?? '') ?? 0;
+    }
+
+    return PendingInvoiceItem(
+      item: (map['item'] as String?) ??
+          (map['name'] as String?) ??
+          (map['product'] as String?) ??
+          '',
+      qty: _i(map['qty'] ?? map['quantity'] ?? map['count']),
+      price: _d(map['price'] ?? map['unit_price'] ?? map['unitPrice']),
+      cost: _d(map['cost'] ?? map['cost_price'] ?? map['costPrice']),
+    );
+  }
+}
+
+/// Singleton service that wraps the `pending_invoices` collection.
+class PendingInvoicesService {
+  PendingInvoicesService._();
+  static final PendingInvoicesService instance = PendingInvoicesService._();
+
+  static CollectionReference<Map<String, dynamic>> get _col =>
+      FirebaseFirestore.instance.collection('pending_invoices');
+
+  /// Real-time stream of invoices with status == "pending_review".
+  Stream<List<PendingInvoice>> pendingStream() {
+    return _col
+        .where('status', isEqualTo: 'pending_review')
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs.map((d) => PendingInvoice.fromDoc(d)).toList(),
+        );
+  }
+
+  /// Update the status of a single document.
+  Future<void> updateStatus(String docId, String newStatus) async {
+    await _col.doc(docId).update({'status': newStatus});
+  }
+
+  /// Persist all user edits back to the Firestore document **and** set
+  /// status to "completed" in a single atomic [update] call.
+  ///
+  /// [items] is the final list of line-items after any in-app edits.
+  Future<void> approveInvoice({
+    required String docId,
+    required String customerName,
+    required String invoiceId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    await _col.doc(docId).update({
+      'customer_name': customerName,
+      'invoice_id': invoiceId,
+      'items': items,
+      'status': 'completed',
+      'approved_at': DateTime.now().toIso8601String(),
+    });
+  }
+}

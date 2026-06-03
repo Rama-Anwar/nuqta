@@ -11,7 +11,8 @@ class LocalServerService {
   // تم تعديل المسار هنا ليتطابق مع رابط n8n
   static const String _receiveOrderPath = '/items';
 
-  final StreamController<dynamic> _incomingOrderController = StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _incomingOrderController =
+      StreamController<dynamic>.broadcast();
 
   HttpServer? _server;
 
@@ -36,7 +37,9 @@ class LocalServerService {
       cancelOnError: false,
     );
 
-    stdout.writeln('LocalServerService listening on http://${server.address.address}:$_port$_receiveOrderPath');
+    stdout.writeln(
+      'LocalServerService listening on http://${server.address.address}:$_port$_receiveOrderPath',
+    );
   }
 
   Future<void> stop() async {
@@ -75,10 +78,12 @@ class LocalServerService {
 
       request.response.statusCode = HttpStatus.ok;
       request.response.headers.contentType = ContentType.json;
-      request.response.write(jsonEncode(<String, dynamic>{
-        'success': true,
-        'message': 'Order received',
-      }));
+      request.response.write(
+        jsonEncode(<String, dynamic>{
+          'success': true,
+          'message': 'Order received',
+        }),
+      );
       await request.response.close();
     } catch (error) {
       try {

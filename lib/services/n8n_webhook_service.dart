@@ -38,6 +38,62 @@ class N8nWebhookService {
     await _postJson(url, payload);
   }
 
+  // ── Environment toggle ──────────────────────────────────────────────────
+  //
+  // Set to [true]  → requests go to the n8n TEST webhook (safe to experiment).
+  // Set to [false] → requests go to the PRODUCTION webhook (live traffic).
+  //
+  // Flip this flag before a release build.
+  static bool isTestingMode = false;
+
+  // Finalize-invoice endpoints.
+  static const String _testUrl =
+      'https://doxological-turner-insurmountably.ngrok-free.dev/webhook-test/finalize-invoice';
+  static const String _prodUrl =
+      'https://n8n-production-9b11.up.railway.app/webhook/finalize-invoice';
+
+  /// Finalizes an invoice by posting its full data to [_testUrl] or [_prodUrl]
+  /// depending on [isTestingMode].
+  ///
+  /// Payload fields:
+  ///  • `docId`         — Firestore document ID
+  ///  • `invoice_id`    — human-readable invoice number
+  ///  • `customer_name` — customer / supplier name
+  ///  • `items`         — list of `{item, qty, price, cost}` objects
+  ///
+  /// Must only be called **after** the Firestore document has been
+  /// successfully updated to "completed".
+  Future<void> pingDocId({
+    required String docId,
+    required String invoiceId,
+    required String customerName,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final url = isTestingMode ? _testUrl : _prodUrl;
+
+    final body = jsonEncode(<String, dynamic>{
+      'docId': docId,
+      'invoice_id': invoiceId,
+      'customer_name': customerName,
+      'items': items,
+    });
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: const <String, String>{
+        'Content-Type': 'application/json',
+      },
+      body: body,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw HttpException(
+        'Finalize-invoice webhook failed [${isTestingMode ? 'TEST' : 'PROD'}] '
+        '(HTTP ${response.statusCode}): ${response.body}',
+      );
+    }
+  }
+
   Future<Map<String, dynamic>?> receiveOrder() async {
     final url = receiveOrderWebhookUrl;
     if (url == null || url.isEmpty) {

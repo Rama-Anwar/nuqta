@@ -19,6 +19,71 @@ class _InvoicesPageState extends State<InvoicesPage> {
   bool isAllSelected = true;
   DateTime? _selectedDate;
 
+  // ── Delete helpers ──────────────────────────────────────────────────────
+
+  /// Shows a confirmation dialog; returns true only if the user taps Delete.
+  Future<bool?> _confirmDelete(InvoiceModel invoice) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Delete Invoice',
+          style: GoogleFonts.montserrat(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          'Delete "${invoice.customerName}"?\nThis action cannot be undone.',
+          style: GoogleFonts.inter(color: AppColors.textMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.inter(
+                color: AppColors.errorMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Wraps an invoice card with swipe-to-delete (end-to-start).
+  Widget _buildDismissibleCard(InvoiceModel invoice) {
+    return Dismissible(
+      key: Key(invoice.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirmDelete(invoice),
+      onDismissed: (_) => ReceiptStore.instance.deleteReceipt(invoice.id),
+      background: const SizedBox.shrink(),
+      secondaryBackground: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 28),
+        decoration: BoxDecoration(
+          color: AppColors.errorMuted,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.delete_rounded, color: Colors.white, size: 28),
+      ),
+      child: _buildInvoiceCard(invoice),
+    );
+  }
+
   Future<void> _toggleStatus(InvoiceModel invoice) async {
     final receipt = (await ReceiptStore.instance.receiptsStream().first)
         .firstWhere((r) => r.id == invoice.id);
@@ -250,7 +315,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
 
               const SizedBox(height: 12),
 
-              ...visibleInvoices.map(_buildInvoiceCard),
+              ...visibleInvoices.map(_buildDismissibleCard),
 
               const SizedBox(height: 24),
 
@@ -773,7 +838,59 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
         ),
         actions: [
           if (_isEditable)
-            IconButton(icon: const Icon(Icons.edit), onPressed: _openEditor),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: _openEditor,
+            ),
+          IconButton(
+            icon: Icon(Icons.delete_rounded, color: AppColors.errorMuted),
+            tooltip: 'Delete invoice',
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: AppColors.surfaceCard,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: Text(
+                    'Delete Invoice',
+                    style: GoogleFonts.montserrat(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  content: Text(
+                    'Delete "${_invoice.customerName}"?\nThis action cannot be undone.',
+                    style: GoogleFonts.inter(color: AppColors.textMuted),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.inter(color: AppColors.textMuted),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(
+                        'Delete',
+                        style: GoogleFonts.inter(
+                          color: AppColors.errorMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true && mounted) {
+                await ReceiptStore.instance.deleteReceipt(_invoice.id);
+                if (mounted) Navigator.of(context).pop();
+              }
+            },
+          ),
           const SizedBox(width: 8),
         ],
       ),

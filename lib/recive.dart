@@ -7,6 +7,8 @@ import 'data/receipt_store.dart';
 import 'nav.dart';
 import 'services/local_server_service.dart';
 import 'services/n8n_webhook_service.dart';
+import 'services/pending_invoices_service.dart';
+import 'widgets/pending_invoices_badge.dart';
 
 class ReceivePage extends StatefulWidget {
   const ReceivePage({super.key});
@@ -26,6 +28,14 @@ class _ReceivePageState extends State<ReceivePage> {
 
   final List<_ReceiptLine> _items = <_ReceiptLine>[];
   StreamSubscription<dynamic>? _incomingOrderSubscription;
+
+  /// The Firestore docId of the pending invoice currently loaded in the form.
+  /// Null when the user is creating a brand-new manual invoice.
+  String? _activePendingDocId;
+
+  /// True while [_submit] is running – disables the submit button and shows
+  /// a spinner to prevent double-submissions.
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -263,7 +273,46 @@ class _ReceivePageState extends State<ReceivePage> {
     return defaultValue;
   }
 
+  /// Populates the form with data from a [PendingInvoice] selected in the
+  /// waiting-list sheet. The Firestore status is already flipped to
+  /// "in_progress" by the tile widget before this is called.
+  void _loadFromPendingInvoice(PendingInvoice inv) {
+    if (!mounted) return;
+
+    setState(() {
+      // ── Remember which Firestore doc is loaded so _submit() can update it ──
+      _activePendingDocId = inv.docId;
+
+      _customerController.text = inv.customerName;
+      _invoiceController.text = inv.invoiceId;
+      _items
+        ..clear()
+        ..addAll(
+          inv.items.map(
+            (i) => _ReceiptLine(
+              item: i.item,
+              quantity: i.qty,
+              unitPrice: i.price,
+              costPrice: i.cost,
+            ),
+          ),
+        );
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Loaded "${inv.customerName}" from waiting list.',
+        ),
+        backgroundColor: AppPalette.primaryContainer,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Add at least one item before saving.')),
@@ -271,55 +320,138 @@ class _ReceivePageState extends State<ReceivePage> {
       return;
     }
 
-    final receipt = ReceiptRecord(
-      id: 'RCPT-${DateTime.now().millisecondsSinceEpoch}',
-      userUid: FirebaseAuth.instance.currentUser!.uid,
-      customerName: _customerController.text.trim().isEmpty
-          ? 'Unnamed Customer'
-          : _customerController.text.trim(),
-      invoiceId: _invoiceController.text.trim().isEmpty
-          ? null
-          : _invoiceController.text.trim(),
-      date: DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
-      createdAt: DateTime.now(),
-      status: InvoiceStatus.paid,
-      items: _items
-          .map(
-            (line) => ReceiptLineItem(
-              item: line.item,
-              quantity: line.quantity,
-              unitPrice: line.unitPrice,
-              costPrice: line.costPrice,
-            ),
-          )
-          .toList(),
-    );
+    setState(() => _isSubmitting = true);
 
-    await ReceiptStore.instance.addReceipt(receipt);
+    final docId = _activePendingDocId;
+    final customerName = _customerController.text.trim().isEmpty
+        ? 'Unnamed Customer'
+        : _customerController.text.trim();
+    final invoiceId = _invoiceController.text.trim();
+    final editedItems = _items
+        .map(
+          (line) => <String, dynamic>{
+            'item': line.item,
+            'qty': line.quantity,
+            'price': line.unitPrice,
+            'cost': line.costPrice,
+          },
+        )
+        .toList();
 
     try {
-      await N8nWebhookService.instance.sendInvoice(receipt);
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Receipt saved, but n8n send failed: $error')),
+      if (docId != null) {
+        // ── Pending architecture ──────────────────────────────────────────
+        final receipt = ReceiptRecord(
+          id: 'RCPT-${DateTime.now().millisecondsSinceEpoch}',
+          userUid: FirebaseAuth.instance.currentUser!.uid,
+          customerName: customerName,
+          invoiceId: invoiceId.isEmpty ? null : invoiceId,
+          date: DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
+          createdAt: DateTime.now(),
+          status: InvoiceStatus.paid,
+          items: _items
+              .map(
+                (line) => ReceiptLineItem(
+                  item: line.item,
+                  quantity: line.quantity,
+                  unitPrice: line.unitPrice,
+                  costPrice: line.costPrice,
+                ),
+              )
+              .toList(),
         );
+
+        await Future.wait([
+          PendingInvoicesService.instance.approveInvoice(
+            docId: docId,
+            customerName: customerName,
+            invoiceId: invoiceId,
+            items: editedItems,
+          ),
+          ReceiptStore.instance.addReceipt(receipt),
+          N8nWebhookService.instance.pingDocId(
+            docId: docId,
+            invoiceId: invoiceId,
+            customerName: customerName,
+            items: editedItems,
+          ).catchError((e) {
+            debugPrint('n8n pingDocId error (non-fatal): $e');
+          }),
+        ]);
+      } else {
+        // ── Manual invoice ────────────────────────────────────────────────
+        final receipt = ReceiptRecord(
+          id: 'RCPT-${DateTime.now().millisecondsSinceEpoch}',
+          userUid: FirebaseAuth.instance.currentUser!.uid,
+          customerName: customerName,
+          invoiceId: invoiceId.isEmpty ? null : invoiceId,
+          date: DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
+          createdAt: DateTime.now(),
+          status: InvoiceStatus.paid,
+          items: _items
+              .map(
+                (line) => ReceiptLineItem(
+                  item: line.item,
+                  quantity: line.quantity,
+                  unitPrice: line.unitPrice,
+                  costPrice: line.costPrice,
+                ),
+              )
+              .toList(),
+        );
+
+        await Future.wait([
+          ReceiptStore.instance.addReceipt(receipt),
+          N8nWebhookService.instance.sendInvoice(receipt).catchError((e) {
+            debugPrint('n8n sendInvoice error (non-fatal): $e');
+          }),
+        ]);
       }
+
+      if (!mounted) return;
+
+      // ── Success: clear form state ──────────────────────────────────────
+      setState(() {
+        _activePendingDocId = null;
+        _customerController.clear();
+        _invoiceController.clear();
+        _dateController.clear();
+        _items.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                docId != null
+                    ? 'Invoice approved & processed!'
+                    : 'Receipt saved and dashboard updated.',
+              ),
+            ],
+          ),
+          backgroundColor: AppPalette.primaryContainer,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(AppRoutes.dash);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $error'),
+          backgroundColor: AppPalette.errorMuted,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Receipt saved and dashboard updated.')),
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    Navigator.of(context).pushReplacementNamed(AppRoutes.dash);
   }
 
   @override
@@ -329,7 +461,10 @@ class _ReceivePageState extends State<ReceivePage> {
       body: SafeArea(
         child: Column(
           children: [
-            _TopAppBar(onBack: () => Navigator.of(context).maybePop()),
+            _TopAppBar(
+              onBack: () => Navigator.of(context).maybePop(),
+              onPendingTap: _loadFromPendingInvoice,
+            ),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -361,9 +496,10 @@ class _ReceivePageState extends State<ReceivePage> {
                                 onRemoveItem: _removeItem,
                                 onNameChanged: _updateItemName,
                                 onQtyChanged: _updateItemQuantity,
-                                  onPriceChanged: _updateItemPrice,
-                                  onCostChanged: _updateItemCost,
+                                onPriceChanged: _updateItemPrice,
+                                onCostChanged: _updateItemCost,
                                 onSubmit: _submit,
+                                isSubmitting: _isSubmitting,
                               )
                             : _MobileLayout(
                                 costPriceController: _costPriceController,
@@ -381,9 +517,10 @@ class _ReceivePageState extends State<ReceivePage> {
                                 onRemoveItem: _removeItem,
                                 onNameChanged: _updateItemName,
                                 onQtyChanged: _updateItemQuantity,
-                                  onPriceChanged: _updateItemPrice,
-                                  onCostChanged: _updateItemCost,
+                                onPriceChanged: _updateItemPrice,
+                                onCostChanged: _updateItemCost,
                                 onSubmit: _submit,
+                                isSubmitting: _isSubmitting,
                               ),
                       ),
                     ),
@@ -402,7 +539,7 @@ class _ReceivePageState extends State<ReceivePage> {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _MobileActionBar(total: _total, onSubmit: _submit),
+              _MobileActionBar(total: _total, onSubmit: _submit, isSubmitting: _isSubmitting),
               const AppBottomNavBar(activeIndex: 1),
             ],
           );
@@ -414,8 +551,12 @@ class _ReceivePageState extends State<ReceivePage> {
 
 class _TopAppBar extends StatelessWidget {
   final VoidCallback onBack;
+  final void Function(PendingInvoice invoice) onPendingTap;
 
-  const _TopAppBar({required this.onBack});
+  const _TopAppBar({
+    required this.onBack,
+    required this.onPendingTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -449,6 +590,9 @@ class _TopAppBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
+          // ── Pending-invoices badge button ──────────────────────────────
+          PendingInvoicesBadgeButton(onInvoiceSelected: onPendingTap),
+          // ── Draft pill ────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -489,6 +633,7 @@ class _DesktopLayout extends StatelessWidget {
   final void Function(int index, String value) onPriceChanged;
   final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
+  final bool isSubmitting;
 
   const _DesktopLayout({
     required this.customerController,
@@ -509,6 +654,7 @@ class _DesktopLayout extends StatelessWidget {
     required this.onPriceChanged,
     required this.onCostChanged,
     required this.onSubmit,
+    required this.isSubmitting,
   });
 
   @override
@@ -636,6 +782,7 @@ class _DesktopLayout extends StatelessWidget {
             onPriceChanged: onPriceChanged,
             onCostChanged: onCostChanged,
             onSubmit: onSubmit,
+            isSubmitting: isSubmitting,
           ),
         ),
       ],
@@ -662,6 +809,7 @@ class _MobileLayout extends StatelessWidget {
   final void Function(int index, String value) onPriceChanged;
   final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
+  final bool isSubmitting;
 
   const _MobileLayout({
     required this.costPriceController,
@@ -682,6 +830,7 @@ class _MobileLayout extends StatelessWidget {
     required this.onPriceChanged,
     required this.onCostChanged,
     required this.onSubmit,
+    required this.isSubmitting,
   });
 
   @override
@@ -822,6 +971,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
   final void Function(int index, String value) onPriceChanged;
   final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
+  final bool isSubmitting;
 
   const _ItemsPanelDesktop({
     required this.items,
@@ -834,6 +984,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
     required this.onPriceChanged,
     required this.onCostChanged,
     required this.onSubmit,
+    required this.isSubmitting,
   });
 
   @override
@@ -919,6 +1070,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
               (sum, item) => sum + (item.costPrice * item.quantity),
             ),
             onSubmit: onSubmit,
+            isSubmitting: isSubmitting,
           ),
         ],
       ),
@@ -993,6 +1145,7 @@ class _DesktopTotalsSummary extends StatelessWidget {
   final double total;
   final double totalCost;
   final VoidCallback onSubmit;
+  final bool isSubmitting;
 
   const _DesktopTotalsSummary({
     required this.subtotal,
@@ -1000,6 +1153,7 @@ class _DesktopTotalsSummary extends StatelessWidget {
     required this.total,
     required this.totalCost,
     required this.onSubmit,
+    required this.isSubmitting,
   });
 
   @override
@@ -1025,7 +1179,7 @@ class _DesktopTotalsSummary extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: onSubmit,
+              onPressed: isSubmitting ? null : onSubmit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppPalette.primaryContainer,
                 foregroundColor: AppPalette.textPrimary,
@@ -1035,20 +1189,29 @@ class _DesktopTotalsSummary extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'GENERATE INVOICE',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'APPROVE INVOICE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.check_circle_rounded, size: 18),
+                      ],
                     ),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_rounded, size: 18),
-                ],
-              ),
             ),
           ),
         ],
@@ -1079,8 +1242,13 @@ class _MobileCompactTotals extends StatelessWidget {
 class _MobileActionBar extends StatelessWidget {
   final double total;
   final VoidCallback onSubmit;
+  final bool isSubmitting;
 
-  const _MobileActionBar({required this.total, required this.onSubmit});
+  const _MobileActionBar({
+    required this.total,
+    required this.onSubmit,
+    required this.isSubmitting,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1123,7 +1291,7 @@ class _MobileActionBar extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: onSubmit,
+                onPressed: isSubmitting ? null : onSubmit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppPalette.primaryContainer,
                   foregroundColor: AppPalette.textPrimary,
@@ -1133,20 +1301,29 @@ class _MobileActionBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'GENERATE INVOICE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'APPROVE INVOICE',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(Icons.check_circle_rounded, size: 18),
+                        ],
                       ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_rounded, size: 18),
-                  ],
-                ),
               ),
             ),
           ],
