@@ -122,7 +122,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Inventory Sheet',
                         subtitle: 'Manage stock and products',
                         onTap: () async {
-                          final url = Uri.parse(profile!.sheetUrl);
+                          final sheetUrl = profile?.sheetUrl;
+
+                          if (sheetUrl == null || sheetUrl.isEmpty) return;
+
+                          final url = Uri.parse(sheetUrl);
                           await launchUrl(
                             url,
                             mode: LaunchMode.externalApplication,
@@ -298,7 +302,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Billing: ${DateFormat('d MMM yyyy').format(profile!.billingDate)}',
+                    profile?.billingDate != null
+                        ? 'Billing: ${DateFormat('d MMM yyyy').format(profile!.billingDate)}'
+                        : 'Billing: -',
+
                     style: GoogleFonts.inter(
                       color: AppColors.textDim,
                       fontSize: 12,
@@ -443,6 +450,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAccountSection() {
+    final lastLogin = user?.metadata.lastSignInTime;
     return Column(
       children: [
         Padding(
@@ -466,8 +474,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      user?.metadata.lastSignInTime != null
-                          ? 'Last login: ${DateFormat('d MMM yyyy, HH:mm').format(user!.metadata.lastSignInTime!)}'
+                      lastLogin != null
+                          ? 'Last login: ${DateFormat('d MMM yyyy, HH:mm').format(lastLogin)}'
                           : 'Last login: -',
                       style: GoogleFonts.inter(
                         color: AppColors.textDim,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import 'package:invoice_ai/helper/sendSupportEmail.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'nav.dart';
@@ -232,37 +233,25 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
 
   Future<void> _sendSupportRequest() async {
     final message = _messageController.text.trim();
-    final uri = Uri(
-      scheme: 'mailto',
-      path: 'rama2kalloub@gmail.com',
-      queryParameters: {
-        'subject': 'Nuqta Support Request - $selectedIssue',
-        'body': message.isEmpty
-            ? 'Issue type: $selectedIssue'
-            : 'Issue type: $selectedIssue\n\n$message',
-      },
-    );
 
-    try {
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (launched) return;
-    } on MissingPluginException {
-      if (!mounted) return;
-      _showSupportError(
-        'Email support needs a full app restart after adding the mail plugin.',
-      );
-      return;
-    } catch (_) {
-      if (!mounted) return;
-      _showSupportError('No email app was found on this device.');
+    if (message.isEmpty) {
+      _showSupportError("Please write a message first.");
       return;
     }
 
-    if (!mounted) return;
-    _showSupportError('No email app was found on this device.');
+    try {
+      await sendSupportEmail(issueType: selectedIssue, message: message);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Request sent successfully")),
+      );
+
+      _messageController.clear();
+    } catch (e) {
+      _showSupportError("Failed to send request. Try again.");
+    }
   }
 
   void _showSupportError(String message) {
