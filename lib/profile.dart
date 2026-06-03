@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -30,13 +31,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserProfile? profile;
   bool isLoading = true;
 
+  User? get user => FirebaseAuth.instance.currentUser;
   @override
   void initState() {
     super.initState();
+
     _loadProfile();
   }
 
-Future<void> _loadProfile() async {
+  Future<void> _loadProfile() async {
     try {
       print("Loading profile...");
 
@@ -453,7 +456,7 @@ Future<void> _loadProfile() async {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'admin@nuqtawholesale.com',
+                      user?.email ?? 'No email',
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         color: AppColors.textMain,
@@ -463,7 +466,9 @@ Future<void> _loadProfile() async {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Last login: 2 hours ago',
+                      user?.metadata.lastSignInTime != null
+                          ? 'Last login: ${DateFormat('d MMM yyyy, HH:mm').format(user!.metadata.lastSignInTime!)}'
+                          : 'Last login: -',
                       style: GoogleFonts.inter(
                         color: AppColors.textDim,
                         fontSize: 12,
@@ -482,7 +487,13 @@ Future<void> _loadProfile() async {
           child: SizedBox(
             width: double.infinity,
             child: TextButton.icon(
-              onPressed: () {},
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                if (!context.mounted) return;
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+              },
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.errorMuted.withValues(alpha: 0.12),
                 foregroundColor: AppColors.errorMuted,
