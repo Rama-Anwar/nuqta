@@ -28,12 +28,25 @@ class PendingInvoicesBadgeButton extends StatelessWidget {
       builder: (context, snapshot) {
         final invoices = snapshot.data ?? [];
         final count = invoices.length;
+        final hasError = snapshot.hasError;
 
         return GestureDetector(
-          onTap: () => _openSheet(context, invoices),
-          child: _BadgeIcon(count: count),
+          onTap: hasError
+              ? () => _showLoadError(context)
+              : () => _openSheet(context, invoices),
+          child: _BadgeIcon(count: count, hasError: hasError),
         );
       },
+    );
+  }
+
+  void _showLoadError(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Unable to load pending invoices. Check your organization access.',
+        ),
+      ),
     );
   }
 
@@ -59,7 +72,9 @@ class PendingInvoicesBadgeButton extends StatelessWidget {
 
 class _BadgeIcon extends StatefulWidget {
   final int count;
-  const _BadgeIcon({required this.count});
+  final bool hasError;
+
+  const _BadgeIcon({required this.count, required this.hasError});
 
   @override
   State<_BadgeIcon> createState() => _BadgeIconState();
@@ -77,9 +92,10 @@ class _BadgeIconState extends State<_BadgeIcon>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _scale = Tween<double>(begin: 1.0, end: 1.25).animate(
-      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
-    );
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
   }
 
   @override
@@ -91,6 +107,11 @@ class _BadgeIconState extends State<_BadgeIcon>
   @override
   Widget build(BuildContext context) {
     final hasPending = widget.count > 0;
+    final color = widget.hasError
+        ? Colors.redAccent
+        : hasPending
+        ? const Color(0xFFEE671C)
+        : const Color(0xFFBDC1C6);
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -108,23 +129,27 @@ class _BadgeIconState extends State<_BadgeIcon>
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: hasPending
+                color: widget.hasError
+                    ? Colors.redAccent.withValues(alpha: 0.15)
+                    : hasPending
                     ? const Color(0xFFEE671C).withValues(alpha: 0.15)
                     : const Color(0xFF2B3035),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: hasPending
+                  color: widget.hasError
+                      ? Colors.redAccent.withValues(alpha: 0.45)
+                      : hasPending
                       ? const Color(0xFFEE671C).withValues(alpha: 0.45)
                       : const Color(0xFF3E444A),
                 ),
               ),
               child: Icon(
-                hasPending
+                widget.hasError
+                    ? Icons.error_outline_rounded
+                    : hasPending
                     ? Icons.notifications_active_rounded
                     : Icons.notifications_none_rounded,
-                color: hasPending
-                    ? const Color(0xFFEE671C)
-                    : const Color(0xFFBDC1C6),
+                color: color,
                 size: 22,
               ),
             ),
@@ -250,8 +275,7 @@ class _PendingInvoicesSheet extends StatelessWidget {
                       ),
                     ),
                     // Live indicator dot
-                    if (invoices.isNotEmpty)
-                      _LiveDot(),
+                    if (invoices.isNotEmpty) _LiveDot(),
                   ],
                 ),
               ),
@@ -310,12 +334,24 @@ class _InvoiceTileState extends State<_InvoiceTile> {
     setState(() => _loading = true);
     try {
       // Mark as in_progress in Firestore immediately
-      await PendingInvoicesService.instance
-          .updateStatus(widget.invoice.docId, 'in_progress');
+      await PendingInvoicesService.instance.updateStatus(
+        widget.invoice.docId,
+        'in_progress',
+      );
+      if (mounted) widget.onTap();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Unable to open this invoice. Check your organization access.',
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-    widget.onTap();
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// A lightweight model representing one document from the
 /// top-level `pending_invoices` Firestore collection.
@@ -22,8 +23,7 @@ class PendingInvoice {
 
     // invoice_id may arrive as a number or a string from n8n
     final rawId = data['invoice_id'];
-    final invoiceIdStr =
-        rawId == null ? '' : rawId.toString();
+    final invoiceIdStr = rawId == null ? '' : rawId.toString();
 
     final rawItems = data['items'];
     final items = <PendingInvoiceItem>[];
@@ -59,24 +59,25 @@ class PendingInvoiceItem {
   });
 
   factory PendingInvoiceItem.fromMap(Map<String, dynamic> map) {
-    double _d(dynamic v) {
+    double parseDouble(dynamic v) {
       if (v is num) return v.toDouble();
       return double.tryParse(v?.toString() ?? '') ?? 0.0;
     }
 
-    int _i(dynamic v) {
+    int parseInt(dynamic v) {
       if (v is num) return v.toInt();
       return int.tryParse(v?.toString() ?? '') ?? 0;
     }
 
     return PendingInvoiceItem(
-      item: (map['item'] as String?) ??
+      item:
+          (map['item'] as String?) ??
           (map['name'] as String?) ??
           (map['product'] as String?) ??
           '',
-      qty: _i(map['qty'] ?? map['quantity'] ?? map['count']),
-      price: _d(map['price'] ?? map['unit_price'] ?? map['unitPrice']),
-      cost: _d(map['cost'] ?? map['cost_price'] ?? map['costPrice']),
+      qty: parseInt(map['qty'] ?? map['quantity'] ?? map['count']),
+      price: parseDouble(map['price'] ?? map['unit_price'] ?? map['unitPrice']),
+      cost: parseDouble(map['cost'] ?? map['cost_price'] ?? map['costPrice']),
     );
   }
 }
@@ -89,20 +90,64 @@ class PendingInvoicesService {
   static CollectionReference<Map<String, dynamic>> get _col =>
       FirebaseFirestore.instance.collection('pending_invoices');
 
+  Future<String> _currentOrganizationId() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw StateError('A signed-in user is required to access invoices.');
+    }
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    final organizationId = userDoc.data()?['organization_id'];
+
+    if (organizationId is! String || organizationId.trim().isEmpty) {
+      throw StateError(
+        'The signed-in user does not have a valid organization_id.',
+      );
+    }
+
+    return organizationId.trim();
+  }
+
+  Future<String> currentOrganizationId() => _currentOrganizationId();
+
+  Future<DocumentReference<Map<String, dynamic>>>
+  _invoiceForCurrentOrganization(String docId) async {
+    final organizationId = await _currentOrganizationId();
+    final snapshot = await _col
+        .where('organization_id', isEqualTo: organizationId)
+        .where(FieldPath.documentId, isEqualTo: docId)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      throw StateError(
+        'Invoice $docId was not found in the current organization.',
+      );
+    }
+
+    return snapshot.docs.single.reference;
+  }
+
   /// Real-time stream of invoices with status == "pending_review".
-  Stream<List<PendingInvoice>> pendingStream() {
-    return _col
+  Stream<List<PendingInvoice>> pendingStream() async* {
+    final organizationId = await _currentOrganizationId();
+
+    yield* _col
+        .where('organization_id', isEqualTo: organizationId)
         .where('status', isEqualTo: 'pending_review')
         .snapshots()
         .map(
-          (snap) =>
-              snap.docs.map((d) => PendingInvoice.fromDoc(d)).toList(),
+          (snap) => snap.docs.map((d) => PendingInvoice.fromDoc(d)).toList(),
         );
   }
 
   /// Update the status of a single document.
   Future<void> updateStatus(String docId, String newStatus) async {
-    await _col.doc(docId).update({'status': newStatus});
+    final invoice = await _invoiceForCurrentOrganization(docId);
+    await invoice.update({'status': newStatus});
   }
 
   /// Persist all user edits back to the Firestore document **and** set
@@ -115,7 +160,8 @@ class PendingInvoicesService {
     required String invoiceId,
     required List<Map<String, dynamic>> items,
   }) async {
-    await _col.doc(docId).update({
+    final invoice = await _invoiceForCurrentOrganization(docId);
+    await invoice.update({
       'customer_name': customerName,
       'invoice_id': invoiceId,
       'items': items,

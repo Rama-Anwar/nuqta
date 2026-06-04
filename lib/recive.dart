@@ -1,11 +1,8 @@
-import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'data/receipt_store.dart';
 import 'nav.dart';
-import 'services/local_server_service.dart';
 import 'services/n8n_webhook_service.dart';
 import 'services/pending_invoices_service.dart';
 import 'widgets/pending_invoices_badge.dart';
@@ -27,7 +24,6 @@ class _ReceivePageState extends State<ReceivePage> {
   final _costPriceController = TextEditingController();
 
   final List<_ReceiptLine> _items = <_ReceiptLine>[];
-  StreamSubscription<dynamic>? _incomingOrderSubscription;
 
   /// The Firestore docId of the pending invoice currently loaded in the form.
   /// Null when the user is creating a brand-new manual invoice.
@@ -38,15 +34,7 @@ class _ReceivePageState extends State<ReceivePage> {
   bool _isSubmitting = false;
 
   @override
-  void initState() {
-    super.initState();
-    _incomingOrderSubscription = LocalServerService.instance.incomingOrderStream
-        .listen(_handleIncomingOrder);
-  }
-
-  @override
   void dispose() {
-    _incomingOrderSubscription?.cancel();
     _customerController.dispose();
     _invoiceController.dispose();
     _dateController.dispose();
@@ -119,160 +107,6 @@ class _ReceivePageState extends State<ReceivePage> {
     });
   }
 
-  void _handleIncomingOrder(dynamic incomingData) {
-    if (!mounted) {
-      return;
-    }
-
-    final dynamic data = incomingData is List
-        ? (incomingData.isNotEmpty ? incomingData.first : <String, dynamic>{})
-        : incomingData;
-    if (data is! Map) {
-      return;
-    }
-
-    final order = Map<String, dynamic>.from(data);
-    final customerName = _readIncomingString(order, <String>[
-      'customer_name',
-      'customerName',
-      'supplier',
-      'customer',
-      'name',
-    ]);
-    final invoiceId = _readIncomingString(order, <String>[
-      'invoice_id',
-      'invoiceId',
-      'order_id',
-      'orderId',
-    ]);
-    final incomingItems = _parseIncomingItems(order);
-
-    setState(() {
-      if (customerName != null && customerName.isNotEmpty) {
-        _customerController.text = customerName;
-      }
-
-      if (invoiceId != null && invoiceId.isNotEmpty) {
-        _invoiceController.text = invoiceId;
-      }
-
-      _items
-        ..clear()
-        ..addAll(incomingItems);
-    });
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Data loaded successfully')));
-  }
-
-  String? _readIncomingString(Map<String, dynamic> source, List<String> keys) {
-    for (final key in keys) {
-      final value = source[key];
-      if (value == null) {
-        continue;
-      }
-
-      final text = value.toString().trim();
-      if (text.isNotEmpty) {
-        return text;
-      }
-    }
-
-    return null;
-  }
-
-  List<_ReceiptLine> _parseIncomingItems(Map<String, dynamic> order) {
-    final rawItems = order['items'] ?? order['products'];
-    if (rawItems is! List) {
-      return <_ReceiptLine>[];
-    }
-
-    final parsedItems = <_ReceiptLine>[];
-
-    for (final rawItem in rawItems) {
-      if (rawItem is! Map) {
-        continue;
-      }
-
-      final itemMap = Map<String, dynamic>.from(rawItem);
-      final cost = _readIncomingDouble(itemMap, <String>[
-        'cost',
-        'cost_price',
-        'costPrice',
-      ], defaultValue: 0.0);
-      final name = _readIncomingString(itemMap, <String>[
-        'name',
-        'item',
-        'product',
-        'title',
-        'description',
-      ]);
-      final quantity = _readIncomingInt(itemMap, <String>[
-        'qty',
-        'quantity',
-        'count',
-      ]);
-      final price = _readIncomingDouble(itemMap, <String>[
-        'price',
-        'unit_price',
-        'unitPrice',
-        'amount',
-      ], defaultValue: 0.0);
-
-      if (name == null || name.isEmpty || quantity <= 0) {
-        continue;
-      }
-
-      parsedItems.add(
-        _ReceiptLine(
-          item: name,
-          quantity: quantity,
-          unitPrice: price,
-          costPrice: cost,
-        ),
-      );
-    }
-
-    return parsedItems;
-  }
-
-  int _readIncomingInt(Map<String, dynamic> source, List<String> keys) {
-    for (final key in keys) {
-      final value = source[key];
-      if (value is num) {
-        return value.toInt();
-      }
-
-      final parsed = int.tryParse(value?.toString().trim() ?? '');
-      if (parsed != null) {
-        return parsed;
-      }
-    }
-
-    return 0;
-  }
-
-  double _readIncomingDouble(
-    Map<String, dynamic> source,
-    List<String> keys, {
-    double defaultValue = 0.0,
-  }) {
-    for (final key in keys) {
-      final value = source[key];
-      if (value is num) {
-        return value.toDouble();
-      }
-
-      final parsed = double.tryParse(value?.toString().trim() ?? '');
-      if (parsed != null) {
-        return parsed;
-      }
-    }
-
-    return defaultValue;
-  }
-
   /// Populates the form with data from a [PendingInvoice] selected in the
   /// waiting-list sheet. The Firestore status is already flipped to
   /// "in_progress" by the tile widget before this is called.
@@ -301,9 +135,7 @@ class _ReceivePageState extends State<ReceivePage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Loaded "${inv.customerName}" from waiting list.',
-        ),
+        content: Text('Loaded "${inv.customerName}" from waiting list.'),
         backgroundColor: AppPalette.primaryContainer,
         behavior: SnackBarBehavior.floating,
       ),
@@ -337,6 +169,7 @@ class _ReceivePageState extends State<ReceivePage> {
           },
         )
         .toList();
+    var webhookFailed = false;
 
     try {
       if (docId != null) {
@@ -346,7 +179,8 @@ class _ReceivePageState extends State<ReceivePage> {
           userUid: FirebaseAuth.instance.currentUser!.uid,
           customerName: customerName,
           invoiceId: invoiceId.isEmpty ? null : invoiceId,
-          date: DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
+          date:
+              DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
           createdAt: DateTime.now(),
           status: InvoiceStatus.paid,
           items: _items
@@ -361,23 +195,28 @@ class _ReceivePageState extends State<ReceivePage> {
               .toList(),
         );
 
-        await Future.wait([
-          PendingInvoicesService.instance.approveInvoice(
+        await ReceiptStore.instance.addReceipt(receipt);
+        await PendingInvoicesService.instance.approveInvoice(
+          docId: docId,
+          customerName: customerName,
+          invoiceId: invoiceId,
+          items: editedItems,
+        );
+
+        try {
+          final organizationId = await PendingInvoicesService.instance
+              .currentOrganizationId();
+          await N8nWebhookService.instance.pingDocId(
+            organizationId: organizationId,
             docId: docId,
-            customerName: customerName,
-            invoiceId: invoiceId,
-            items: editedItems,
-          ),
-          ReceiptStore.instance.addReceipt(receipt),
-          N8nWebhookService.instance.pingDocId(
-            docId: docId,
             invoiceId: invoiceId,
             customerName: customerName,
             items: editedItems,
-          ).catchError((e) {
-            debugPrint('n8n pingDocId error (non-fatal): $e');
-          }),
-        ]);
+          );
+        } catch (webhookError) {
+          webhookFailed = true;
+          debugPrint('n8n pingDocId error (non-fatal): $webhookError');
+        }
       } else {
         // ── Manual invoice ────────────────────────────────────────────────
         final receipt = ReceiptRecord(
@@ -385,7 +224,8 @@ class _ReceivePageState extends State<ReceivePage> {
           userUid: FirebaseAuth.instance.currentUser!.uid,
           customerName: customerName,
           invoiceId: invoiceId.isEmpty ? null : invoiceId,
-          date: DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
+          date:
+              DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
           createdAt: DateTime.now(),
           status: InvoiceStatus.paid,
           items: _items
@@ -400,12 +240,7 @@ class _ReceivePageState extends State<ReceivePage> {
               .toList(),
         );
 
-        await Future.wait([
-          ReceiptStore.instance.addReceipt(receipt),
-          N8nWebhookService.instance.sendInvoice(receipt).catchError((e) {
-            debugPrint('n8n sendInvoice error (non-fatal): $e');
-          }),
-        ]);
+        await ReceiptStore.instance.addReceipt(receipt);
       }
 
       if (!mounted) return;
@@ -423,16 +258,24 @@ class _ReceivePageState extends State<ReceivePage> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
               const SizedBox(width: 10),
               Text(
-                docId != null
+                webhookFailed
+                    ? 'Invoice approved, but finalization notification failed.'
+                    : docId != null
                     ? 'Invoice approved & processed!'
                     : 'Receipt saved and dashboard updated.',
               ),
             ],
           ),
-          backgroundColor: AppPalette.primaryContainer,
+          backgroundColor: webhookFailed
+              ? AppPalette.errorMuted
+              : AppPalette.primaryContainer,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 3),
         ),
@@ -444,7 +287,11 @@ class _ReceivePageState extends State<ReceivePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $error'),
+          content: Text(
+            docId != null
+                ? 'Failed to save or approve invoice: $error'
+                : 'Failed to save receipt: $error',
+          ),
           backgroundColor: AppPalette.errorMuted,
           behavior: SnackBarBehavior.floating,
         ),
@@ -539,7 +386,11 @@ class _ReceivePageState extends State<ReceivePage> {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _MobileActionBar(total: _total, onSubmit: _submit, isSubmitting: _isSubmitting),
+              _MobileActionBar(
+                total: _total,
+                onSubmit: _submit,
+                isSubmitting: _isSubmitting,
+              ),
               const AppBottomNavBar(activeIndex: 1),
             ],
           );
@@ -553,10 +404,7 @@ class _TopAppBar extends StatelessWidget {
   final VoidCallback onBack;
   final void Function(PendingInvoice invoice) onPendingTap;
 
-  const _TopAppBar({
-    required this.onBack,
-    required this.onPendingTap,
-  });
+  const _TopAppBar({required this.onBack, required this.onPendingTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1132,7 +980,12 @@ class _ItemsPanelMobile extends StatelessWidget {
                 onRemove: () => onRemoveItem(index),
               );
             }),
-          _MobileCompactTotals(subtotal: subtotal, tax: tax, total: total, totalCost: totalCost),
+          _MobileCompactTotals(
+            subtotal: subtotal,
+            tax: tax,
+            total: total,
+            totalCost: totalCost,
+          ),
         ],
       ),
     );
@@ -1560,7 +1413,10 @@ class _ItemRow extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppPalette.surfaceCard,
                     borderRadius: BorderRadius.circular(10),
@@ -1569,7 +1425,10 @@ class _ItemRow extends StatelessWidget {
                     children: [
                       const Text(
                         'Price',
-                        style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: AppPalette.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       SizedBox(
@@ -1600,7 +1459,10 @@ class _ItemRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppPalette.surfaceCard,
                     borderRadius: BorderRadius.circular(10),
@@ -1609,7 +1471,10 @@ class _ItemRow extends StatelessWidget {
                     children: [
                       const Text(
                         'Cost',
-                        style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: AppPalette.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       SizedBox(
@@ -1617,7 +1482,9 @@ class _ItemRow extends StatelessWidget {
                         child: TextFormField(
                           initialValue: line.costPrice.toStringAsFixed(2),
                           onChanged: onCostChanged,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: AppPalette.textPrimary,
@@ -1648,7 +1515,10 @@ class _ItemRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: AppPalette.surfaceCard,
                         borderRadius: BorderRadius.circular(10),
@@ -1658,7 +1528,10 @@ class _ItemRow extends StatelessWidget {
                         children: [
                           const Text(
                             'Total',
-                            style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                            style: TextStyle(
+                              color: AppPalette.textMuted,
+                              fontSize: 11,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -1675,7 +1548,10 @@ class _ItemRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: AppPalette.surfaceCard,
                         borderRadius: BorderRadius.circular(10),
@@ -1685,7 +1561,10 @@ class _ItemRow extends StatelessWidget {
                         children: [
                           const Text(
                             'Profit',
-                            style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                            style: TextStyle(
+                              color: AppPalette.textMuted,
+                              fontSize: 11,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -1809,7 +1688,10 @@ class _MobileItemCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppPalette.surfaceCard,
                     borderRadius: BorderRadius.circular(10),
@@ -1818,7 +1700,10 @@ class _MobileItemCard extends StatelessWidget {
                     children: [
                       const Text(
                         'Price',
-                        style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: AppPalette.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       SizedBox(
@@ -1847,7 +1732,10 @@ class _MobileItemCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       const Text(
                         'Cost',
-                        style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: AppPalette.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       SizedBox(
@@ -1855,7 +1743,9 @@ class _MobileItemCard extends StatelessWidget {
                         child: TextFormField(
                           initialValue: line.costPrice.toStringAsFixed(2),
                           onChanged: onCostChanged,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: AppPalette.textPrimary,
