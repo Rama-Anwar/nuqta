@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter/services.dart';
 import 'package:invoice_ai/helper/sendSupportEmail.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'nav.dart';
 
@@ -15,6 +13,7 @@ class TechnicalSupportPage extends StatefulWidget {
 
 class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
   String selectedIssue = 'Invoices';
+  bool _isSending = false;
   final TextEditingController _messageController = TextEditingController();
 
   static const Color _background = Color(0xFF1A1D20);
@@ -210,18 +209,29 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _sendSupportRequest,
+              onPressed: _isSending ? null : _sendSupportRequest,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _accent,
                 foregroundColor: Colors.white,
+                disabledBackgroundColor: _accent.withValues(alpha: 0.65),
+                disabledForegroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              icon: const Icon(Icons.send_outlined, size: 18),
+              icon: _isSending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.send_outlined, size: 18),
               label: Text(
-                'SEND REQUEST',
+                _isSending ? 'SENDING...' : 'SEND REQUEST',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w800),
               ),
             ),
@@ -239,6 +249,8 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
       return;
     }
 
+    setState(() => _isSending = true);
+
     try {
       await sendSupportEmail(issueType: selectedIssue, message: message);
 
@@ -250,7 +262,12 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
 
       _messageController.clear();
     } catch (e) {
+      if (!mounted) return;
       _showSupportError("Failed to send request. Try again.");
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
     }
   }
 

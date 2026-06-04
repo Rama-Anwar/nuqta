@@ -97,16 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             fontSize: 20,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.settings_outlined,
-              color: AppColors.textMain,
-            ),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(color: AppColors.borderLowContrast, height: 1),
@@ -518,9 +509,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
                 if (!mounted) return;
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => LoginPage()),
-                );
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => LoginPage()));
               },
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.errorMuted.withValues(alpha: 0.12),
