@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'nav.dart';
 
@@ -40,6 +41,9 @@ class _LoginPageState extends State<LoginPage> {
         email: email,
         password: password,
       );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_login_at', DateTime.now().toIso8601String());
 
       if (!mounted) return;
 

@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.support: (_) => const TechnicalSupportPage(),
       },
       home: FirebaseAuth.instance.currentUser != null
-          ? const LoginPage()
+          ? const DashPage()
           : const LoginPage(),
     );
   }

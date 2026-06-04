@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:invoice_ai/helper/getCurrentUserProfile.dart';
+import 'package:invoice_ai/login.dart';
 import 'package:invoice_ai/models/user_profile_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'nav.dart';
@@ -30,6 +32,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String selectedLanguage = 'ENGLISH';
   UserProfile? profile;
   bool isLoading = true;
+  DateTime? lastLoginAt;
+
+  double _billingProgress() {
+    if (profile == null) return 0;
+
+    final nextBilling = profile!.billingDate;
+    final now = DateTime.now();
+
+    final cycleStart = DateTime(
+      nextBilling.year,
+      nextBilling.month - 1,
+      nextBilling.day,
+    );
+
+    final totalDays = nextBilling.difference(cycleStart).inDays;
+    final daysPassed = now.difference(cycleStart).inDays;
+
+    if (totalDays <= 0) return 0;
+
+    return (daysPassed / totalDays).clamp(0.0, 1.0);
+  }
 
   User? get user => FirebaseAuth.instance.currentUser;
   @override
@@ -41,19 +64,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
-      print("Loading profile...");
-
       profile = await getCurrentUserProfile();
-
-      print("Profile loaded: $profile");
+      final prefs = await SharedPreferences.getInstance();
+      final savedLastLogin = prefs.getString('last_login_at');
 
       setState(() {
+        lastLoginAt = savedLastLogin == null
+            ? user?.metadata.lastSignInTime
+            : DateTime.tryParse(savedLastLogin);
         isLoading = false;
       });
-    } catch (e, stackTrace) {
-      print("ERROR: $e");
-      print(stackTrace);
-
+    } catch (_) {
       setState(() {
         isLoading = false;
       });
@@ -316,7 +337,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: 0.7,
+                      value: _billingProgress(),
                       backgroundColor: Colors.white10,
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         AppColors.accent,
@@ -450,7 +471,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAccountSection() {
-    final lastLogin = user?.metadata.lastSignInTime;
     return Column(
       children: [
         Padding(
@@ -474,8 +494,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      lastLogin != null
-                          ? 'Last login: ${DateFormat('d MMM yyyy, HH:mm').format(lastLogin)}'
+                      lastLoginAt != null
+                          ? 'Last login: ${DateFormat('d MMM yyyy, HH:mm').format(lastLoginAt!)}'
                           : 'Last login: -',
                       style: GoogleFonts.inter(
                         color: AppColors.textDim,
@@ -497,10 +517,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: TextButton.icon(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
-                if (!context.mounted) return;
-                Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+                if (!mounted) return;
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                );
               },
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.errorMuted.withValues(alpha: 0.12),
