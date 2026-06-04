@@ -2,10 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart';
 import 'package:intl/intl.dart';
 import 'package:invoice_ai/helper/getCurrentUserProfile.dart';
 import 'package:invoice_ai/login.dart';
 import 'package:invoice_ai/models/user_profile_model.dart';
+import 'package:invoice_ai/providers/locale_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -62,6 +65,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
 
     _loadProfile();
+  }
+
+  bool _localeInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_localeInitialized) {
+      final locale = context.read<LocaleProvider>().locale;
+
+      selectedLanguage = locale.languageCode == 'ar' ? 'ARABIC' : 'ENGLISH';
+
+      _localeInitialized = true;
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -524,7 +542,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isActive = selectedLanguage == value;
 
     return GestureDetector(
-      onTap: () => setState(() => selectedLanguage = value),
+      onTap: () {
+        final localeProvider = context.read<LocaleProvider>();
+
+        if (value == 'ENGLISH') {
+          localeProvider.setLocale('en');
+        } else {
+          localeProvider.setLocale('ar');
+        }
+
+        setState(() => selectedLanguage = value);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
