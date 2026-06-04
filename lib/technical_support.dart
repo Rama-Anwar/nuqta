@@ -124,7 +124,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
   }
 
   Widget _buildIssueSelector() {
-    final issues = ['Invoices', 'Receipts', 'Inventory', 'Account'];
+    final issues = ['Invoices', 'Receipts', 'Account', 'Other'];
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
