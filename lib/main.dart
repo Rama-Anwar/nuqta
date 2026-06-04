@@ -9,7 +9,6 @@ import 'dash.dart';
 import 'invoices.dart';
 import 'nav.dart';
 import 'recive.dart';
-import 'services/local_server_service.dart';
 import 'technical_support.dart';
 
 Future<void> main() async {
@@ -17,7 +16,6 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  await LocalServerService.instance.start();
   runApp(const MyApp());
 }
 

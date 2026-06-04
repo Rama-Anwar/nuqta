@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -33,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserProfile? profile;
   bool isLoading = true;
   DateTime? lastLoginAt;
+  String? priceSheetUrl;
 
   double _billingProgress() {
     if (profile == null) return 0;
@@ -65,10 +67,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfile() async {
     try {
       profile = await getCurrentUserProfile();
+      final currentUser = FirebaseAuth.instance.currentUser;
+      String? loadedPriceSheetUrl;
+
+      if (currentUser != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+        final organizationId = userDoc.data()?['organization_id'];
+
+        if (organizationId is String && organizationId.trim().isNotEmpty) {
+          final organizationDoc = await FirebaseFirestore.instance
+              .collection('organizations')
+              .doc(organizationId.trim())
+              .get();
+          final rawPriceSheetUrl = organizationDoc.data()?['price_sheet_url'];
+
+          if (rawPriceSheetUrl is String &&
+              rawPriceSheetUrl.trim().isNotEmpty) {
+            loadedPriceSheetUrl = rawPriceSheetUrl.trim();
+          }
+        }
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final savedLastLogin = prefs.getString('last_login_at');
 
       setState(() {
+        priceSheetUrl = loadedPriceSheetUrl;
         lastLoginAt = savedLastLogin == null
             ? user?.metadata.lastSignInTime
             : DateTime.tryParse(savedLastLogin);
@@ -134,15 +161,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Inventory Sheet',
                         subtitle: 'Manage stock and products',
                         onTap: () async {
-                          final sheetUrl = profile?.sheetUrl;
+                          final sheetUrl = priceSheetUrl?.trim();
+                          debugPrint('Inventory Sheet URL: $sheetUrl');
 
-                          if (sheetUrl == null || sheetUrl.isEmpty) return;
+                          final uri = sheetUrl == null
+                              ? null
+                              : Uri.tryParse(sheetUrl);
+                          if (sheetUrl == null ||
+                              sheetUrl.isEmpty ||
+                              uri == null ||
+                              uri.scheme != 'https' ||
+                              uri.host.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Inventory sheet URL is missing or invalid.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
 
-                          final url = Uri.parse(sheetUrl);
-                          await launchUrl(
-                            url,
-                            mode: LaunchMode.externalApplication,
-                          );
+                          var launched = false;
+                          try {
+                            debugPrint(
+                              'Inventory Sheet external launch attempt.',
+                            );
+                            launched = await launchUrl(
+                              uri,
+                              mode: LaunchMode.externalApplication,
+                            );
+                            debugPrint(
+                              'Inventory Sheet external launch result: $launched',
+                            );
+                          } catch (error, stackTrace) {
+                            debugPrint(
+                              'Inventory Sheet external launch error: $error',
+                            );
+                            debugPrintStack(stackTrace: stackTrace);
+                          }
+
+                          if (!launched) {
+                            try {
+                              debugPrint(
+                                'Inventory Sheet platform-default launch attempt.',
+                              );
+                              launched = await launchUrl(
+                                uri,
+                                mode: LaunchMode.platformDefault,
+                              );
+                              debugPrint(
+                                'Inventory Sheet platform-default launch result: $launched',
+                              );
+                            } catch (error, stackTrace) {
+                              debugPrint(
+                                'Inventory Sheet platform-default launch error: $error',
+                              );
+                              debugPrintStack(stackTrace: stackTrace);
+                            }
+                          }
+
+                          if (!launched && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Unable to open the inventory sheet.',
+                                ),
+                              ),
+                            );
+                          }
                         },
                       ),
                       _buildDivider(),
