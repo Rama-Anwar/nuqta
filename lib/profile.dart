@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart';
 import 'package:intl/intl.dart';
+import 'package:invoice_ai/helper/date_formatting_helpers.dart';
 import 'package:invoice_ai/helper/getCurrentUserProfile.dart';
+import 'package:invoice_ai/l10n/app_localizations.dart';
 import 'package:invoice_ai/login.dart';
 import 'package:invoice_ai/models/user_profile_model.dart';
 import 'package:invoice_ai/providers/locale_provider.dart';
@@ -128,6 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.primaryBg,
       appBar: AppBar(
@@ -135,7 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          'Profile',
+          l10n.profile,
           style: GoogleFonts.montserrat(
             color: AppColors.textMain,
             fontWeight: FontWeight.w700,
@@ -153,31 +156,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
               children: [
-                _buildProfileHeader(),
+                _buildProfileHeader(l10n),
                 const SizedBox(height: 28),
                 _buildSectionCard(
-                  title: 'BUSINESS',
+                  title: l10n.business,
                   child: Column(
                     children: [
                       _buildInfoRow(
-                        label: 'Registered name',
-                        value: profile?.name ?? 'Unknown Business',
+                        label: l10n.registeredName,
+                        value: profile?.name ?? l10n.unknownBusiness,
                         icon: Icons.apartment_outlined,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildSectionCard(title: 'PLAN', child: _buildPlanSection()),
+                _buildSectionCard(
+                  title: l10n.plan,
+                  child: _buildPlanSection(l10n),
+                ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
-                  title: 'TOOLS',
+                  title: l10n.tools,
                   child: Column(
                     children: [
                       _buildActionRow(
                         icon: Icons.inventory_2_outlined,
-                        title: 'Inventory Sheet',
-                        subtitle: 'Manage stock and products',
+                        title: l10n.inventorySheet,
+                        subtitle: l10n.manageStockAndProducts,
                         onTap: () async {
                           final sheetUrl = priceSheetUrl?.trim();
                           debugPrint('Inventory Sheet URL: $sheetUrl');
@@ -191,10 +197,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               uri.scheme != 'https' ||
                               uri.host.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Inventory sheet URL is missing or invalid.',
-                                ),
+                              SnackBar(
+                                content: Text(l10n.inventorySheetUrlInvalid),
                               ),
                             );
                             return;
@@ -241,10 +245,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                           if (!launched && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Unable to open the inventory sheet.',
-                                ),
+                              SnackBar(
+                                content: Text(l10n.unableToOpenInventorySheet),
                               ),
                             );
                           }
@@ -253,8 +255,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildDivider(),
                       _buildActionRow(
                         icon: Icons.support_agent_outlined,
-                        title: 'Technical Support',
-                        subtitle: 'Contact help desk',
+                        title: l10n.technicalSupport,
+                        subtitle: l10n.contactHelpDesk,
                         onTap: () =>
                             Navigator.of(context).pushNamed(AppRoutes.support),
                       ),
@@ -263,13 +265,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
-                  title: 'SETTINGS',
-                  child: _buildLanguageRow(),
+                  title: l10n.settings,
+                  child: _buildLanguageRow(l10n),
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
-                  title: 'ACCOUNT',
-                  child: _buildAccountSection(),
+                  title: l10n.account,
+                  child: _buildAccountSection(l10n),
                 ),
               ],
             ),
@@ -277,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(AppLocalizations l10n) {
     return Row(
       children: [
         Container(
@@ -296,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                profile?.name ?? 'Unknown Business',
+                profile?.name ?? l10n.unknownBusiness,
                 style: GoogleFonts.montserrat(
                   color: AppColors.textMain,
                   fontSize: 21,
@@ -390,7 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPlanSection() {
+  Widget _buildPlanSection(AppLocalizations l10n) {
     return Column(
       children: [
         Row(
@@ -406,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Enterprise',
+                          l10n.enterprise,
                           style: GoogleFonts.montserrat(
                             color: AppColors.textMain,
                             fontSize: 18,
@@ -414,14 +416,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
-                      _buildStatusPill('ACTIVE'),
+                      _buildStatusPill(l10n.active),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text(
                     profile?.billingDate != null
-                        ? 'Billing: ${DateFormat('d MMM yyyy').format(profile!.billingDate)}'
-                        : 'Billing: -',
+                        ? l10n.billingDate(
+                            formatDate(context, profile!.billingDate),
+                          )
+                        : l10n.billingUnavailable,
 
                     style: GoogleFonts.inter(
                       color: AppColors.textDim,
@@ -496,7 +500,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildLanguageRow() {
+  Widget _buildLanguageRow(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -505,7 +509,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Language',
+              l10n.language,
               style: GoogleFonts.inter(
                 color: AppColors.textMain,
                 fontSize: 14,
@@ -576,7 +580,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAccountSection() {
+  Widget _buildAccountSection(AppLocalizations l10n) {
     return Column(
       children: [
         Padding(
@@ -590,7 +594,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user?.email ?? 'No email',
+                      user?.email ?? l10n.noEmail,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         color: AppColors.textMain,
@@ -601,8 +605,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 4),
                     Text(
                       lastLoginAt != null
-                          ? 'Last login: ${DateFormat('d MMM yyyy, HH:mm').format(lastLoginAt!)}'
-                          : 'Last login: -',
+                          ? l10n.lastLoginDate(
+                              formatDateTime(context, lastLoginAt!),
+                            )
+                          : l10n.lastLoginUnavailable,
                       style: GoogleFonts.inter(
                         color: AppColors.textDim,
                         fontSize: 12,
@@ -638,7 +644,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               icon: const Icon(Icons.logout, size: 18),
               label: Text(
-                'LOGOUT',
+                l10n.logout,
                 style: GoogleFonts.inter(fontWeight: FontWeight.w800),
               ),
             ),

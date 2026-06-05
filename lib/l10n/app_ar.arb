@@ -1,6 +1,51 @@
 {
-  "appTitle": "Invoice AI",
-  "login": "Login",
-  "profile": "Profile",
-  "language": "Language"
+
+
+
+  "profile": "الملف الشخصي",
+
+  "business": "المنشأة",
+  "registeredName": "الاسم المسجل",
+  "unknownBusiness": "منشأة غير معروفة",
+
+  "plan": "الخطة",
+  "enterprise": "المؤسسات",
+  "active": "نشط",
+  "billing": "تاريخ الفوترة",
+  "billingUnavailable": "تاريخ الفوترة: -",
+
+  "tools": "الأدوات",
+  "inventorySheet": "جدول المخزون",
+  "manageStockAndProducts": "إدارة المخزون والمنتجات",
+  "technicalSupport": "الدعم الفني",
+  "contactHelpDesk": "التواصل مع الدعم الفني",
+
+  "settings": "الإعدادات",
+  "language": "اللغة",
+
+  "account": "الحساب",
+  "noEmail": "لا يوجد بريد إلكتروني",
+  "lastLogin": "آخر تسجيل دخول",
+  "lastLoginUnavailable": "آخر تسجيل دخول: -",
+
+  "logout": "تسجيل الخروج",
+
+  "inventorySheetUrlInvalid": "رابط جدول المخزون غير موجود أو غير صالح.",
+  "unableToOpenInventorySheet": "تعذر فتح جدول المخزون.",
+
+  "billingDate": "تاريخ الفوترة: {date}",
+  "@billingDate": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+
+  "lastLoginDate": "آخر تسجيل دخول: {date}",
+  "@lastLoginDate": {
+    "placeholders": {
+      "date": {}
+    }
+  }
+
+
 }

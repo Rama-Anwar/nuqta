@@ -1,6 +1,51 @@
+
+
 {
-  "appTitle": "Invoice AI",
-  "login": "Login",
+
   "profile": "Profile",
-  "language": "Language"
+
+  "business": "BUSINESS",
+  "registeredName": "Registered name",
+  "unknownBusiness": "Unknown Business",
+
+  "plan": "PLAN",
+  "enterprise": "Enterprise",
+  "active": "ACTIVE",
+  "billing": "Billing",
+  "billingUnavailable": "Billing: -",
+
+  "tools": "TOOLS",
+  "inventorySheet": "Inventory Sheet",
+  "manageStockAndProducts": "Manage stock and products",
+  "technicalSupport": "Technical Support",
+  "contactHelpDesk": "Contact help desk",
+
+  "settings": "SETTINGS",
+  "language": "Language",
+
+  "account": "ACCOUNT",
+  "noEmail": "No email",
+  "lastLogin": "Last login",
+  "lastLoginUnavailable": "Last login: -",
+
+  "logout": "LOGOUT",
+
+  "inventorySheetUrlInvalid": "Inventory sheet URL is missing or invalid.",
+  "unableToOpenInventorySheet": "Unable to open the inventory sheet.",
+
+  "billingDate": "Billing: {date}",
+  "@billingDate": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+
+  "lastLoginDate": "Last login: {date}",
+  "@lastLoginDate": {
+    "placeholders": {
+      "date": {}
+    }
+  }
+
+
 }

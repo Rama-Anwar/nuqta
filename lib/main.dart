@@ -74,3 +74,5 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+//flutter gen-l10n

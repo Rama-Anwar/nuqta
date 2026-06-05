@@ -95,29 +95,155 @@ abstract class AppLocalizations {
     Locale('en')
   ];
 
-  /// No description provided for @appTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Invoice AI'**
-  String get appTitle;
-
-  /// No description provided for @login.
-  ///
-  /// In en, this message translates to:
-  /// **'Login'**
-  String get login;
-
   /// No description provided for @profile.
   ///
   /// In en, this message translates to:
   /// **'Profile'**
   String get profile;
 
+  /// No description provided for @business.
+  ///
+  /// In en, this message translates to:
+  /// **'BUSINESS'**
+  String get business;
+
+  /// No description provided for @registeredName.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered name'**
+  String get registeredName;
+
+  /// No description provided for @unknownBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Business'**
+  String get unknownBusiness;
+
+  /// No description provided for @plan.
+  ///
+  /// In en, this message translates to:
+  /// **'PLAN'**
+  String get plan;
+
+  /// No description provided for @enterprise.
+  ///
+  /// In en, this message translates to:
+  /// **'Enterprise'**
+  String get enterprise;
+
+  /// No description provided for @active.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get active;
+
+  /// No description provided for @billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get billing;
+
+  /// No description provided for @billingUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing: -'**
+  String get billingUnavailable;
+
+  /// No description provided for @tools.
+  ///
+  /// In en, this message translates to:
+  /// **'TOOLS'**
+  String get tools;
+
+  /// No description provided for @inventorySheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory Sheet'**
+  String get inventorySheet;
+
+  /// No description provided for @manageStockAndProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage stock and products'**
+  String get manageStockAndProducts;
+
+  /// No description provided for @technicalSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Support'**
+  String get technicalSupport;
+
+  /// No description provided for @contactHelpDesk.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact help desk'**
+  String get contactHelpDesk;
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'SETTINGS'**
+  String get settings;
+
   /// No description provided for @language.
   ///
   /// In en, this message translates to:
   /// **'Language'**
   String get language;
+
+  /// No description provided for @account.
+  ///
+  /// In en, this message translates to:
+  /// **'ACCOUNT'**
+  String get account;
+
+  /// No description provided for @noEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'No email'**
+  String get noEmail;
+
+  /// No description provided for @lastLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Last login'**
+  String get lastLogin;
+
+  /// No description provided for @lastLoginUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Last login: -'**
+  String get lastLoginUnavailable;
+
+  /// No description provided for @logout.
+  ///
+  /// In en, this message translates to:
+  /// **'LOGOUT'**
+  String get logout;
+
+  /// No description provided for @inventorySheetUrlInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory sheet URL is missing or invalid.'**
+  String get inventorySheetUrlInvalid;
+
+  /// No description provided for @unableToOpenInventorySheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open the inventory sheet.'**
+  String get unableToOpenInventorySheet;
+
+  /// No description provided for @billingDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing: {date}'**
+  String billingDate(Object date);
+
+  /// No description provided for @lastLoginDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Last login: {date}'**
+  String lastLoginDate(Object date);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
