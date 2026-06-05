@@ -2,7 +2,7 @@
 
 {
 
-  "profile": "Profile",
+
 
   "business": "BUSINESS",
   "registeredName": "Registered name",
@@ -102,7 +102,110 @@
   "sep": "SEP",
   "oct": "OCT",
   "nov": "NOV",
-  "dec": "DEC"
+  "dec": "DEC",
 
+
+  "newIntakeReceipt": "New Intake / Receipt",
+  "draft": "Draft",
+
+  "orderInformation": "Order Information",
+  "customerSupplierName": "Customer/Supplier Name",
+  "enterName": "Enter name",
+  "invoiceIdOptional": "Invoice ID (Optional)",
+  "date": "Date",
+  "jod": "JOD",
+  "addItem": "Add Item",
+  "itemName": "Item Name",
+  "scanOrTypeItem": "Scan or type item",
+  "quantity": "Quantity",
+  "addItemButton": "ADD ITEM",
+
+  "itemsCount": "{count} Items",
+  "@itemsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+
+  "description": "Description",
+  "profit": "Profit",
+  "items": "Items",
+  "subtotal": "Subtotal",
+  "tax": "Tax (10%)",
+  "totalCost": "Total Cost",
+  "totalAmount": "Total Amount",
+
+  "approveInvoice": "APPROVE INVOICE",
+
+  "noItemsAdded": "No items added yet.",
+
+  "loadedFromWaitingList": "Loaded \"{customer}\" from waiting list.",
+  "@loadedFromWaitingList": {
+    "placeholders": {
+      "customer": {}
+    }
+  },
+
+  "addValidItem": "Add a valid item, quantity, and price.",
+  "addAtLeastOneItem": "Add at least one item before saving.",
+
+  "unnamedCustomer": "Unnamed Customer",
+
+  "invoiceApprovedProcessed": "Invoice approved & processed!",
+  "receiptSavedDashboardUpdated": "Receipt saved and dashboard updated.",
+  "invoiceApprovedNotificationFailed": "Invoice approved, but finalization notification failed.",
+
+  "failedSaveApproveInvoice": "Failed to save or approve invoice: {error}",
+  "@failedSaveApproveInvoice": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "failedSaveReceipt": "Failed to save receipt: {error}",
+  "@failedSaveReceipt": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "needHelp": "Need help?",
+  "supportIntro": "Send us the issue details and the support team will follow up.",
+
+  "issueType": "ISSUE TYPE",
+
+  "issueInvoices": "Invoices",
+  "issueReceipts": "Receipts",
+  "issueAccount": "Account",
+  "issueOther": "Other",
+
+  "message": "MESSAGE",
+  "describeIssue": "Describe what happened...",
+
+  "sendRequest": "SEND REQUEST",
+  "sending": "SENDING...",
+
+  "writeMessageFirst": "Please write a message first.",
+  "requestSentSuccessfully": "Request sent successfully",
+  "failedToSendRequest": "Failed to send request. Try again.",
+
+  "technicalSupportTitle": "Technical Support",
+
+  "username": "Username",
+  "usernameRequired": "Username is required",
+
+  "securePassword": "Secure Password",
+  "passwordRequired": "Password is required",
+
+  "reset": "RESET",
+
+  "loginToConsole": "Login to Console",
+
+  "securedByInfrastructure": "Secured by Nuqta Core Infrastructure",
+
+  "loginFailed": "Login failed",
+  "noUserFoundForEmail": "No user found for this email.",
+  "wrongPassword": "Wrong password.",
+  "invalidEmail": "Invalid email."
 
 }

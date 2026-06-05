@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:invoice_ai/helper/sendSupportEmail.dart';
+import 'package:invoice_ai/l10n/app_localizations.dart';
 
 import 'nav.dart';
 
@@ -12,7 +13,7 @@ class TechnicalSupportPage extends StatefulWidget {
 }
 
 class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
-  String selectedIssue = 'Invoices';
+  String? selectedIssue;
   bool _isSending = false;
   final TextEditingController _messageController = TextEditingController();
 
@@ -32,6 +33,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: _background,
       appBar: AppBar(
@@ -43,7 +45,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Technical Support',
+          l10n.technicalSupport,
           style: GoogleFonts.montserrat(
             color: _textPrimary,
             fontWeight: FontWeight.w700,
@@ -58,18 +60,18 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
         children: [
-          _buildIntroCard(),
+          _buildIntroCard(l10n),
           const SizedBox(height: 16),
-          _buildIssueSelector(),
+          _buildIssueSelector(l10n),
           const SizedBox(height: 16),
-          _buildMessageCard(),
+          _buildMessageCard(l10n),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavBar(activeIndex: 3),
+      bottomNavigationBar: AppBottomNavBar(activeIndex: 3),
     );
   }
 
-  Widget _buildIntroCard() {
+  Widget _buildIntroCard(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -99,7 +101,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Need help?',
+                  l10n.needHelp,
                   style: GoogleFonts.montserrat(
                     color: _textPrimary,
                     fontSize: 18,
@@ -108,7 +110,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Send us the issue details and the support team will follow up.',
+                  l10n.supportIntro,
                   style: GoogleFonts.inter(
                     color: _textMuted,
                     fontSize: 13,
@@ -123,8 +125,14 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
     );
   }
 
-  Widget _buildIssueSelector() {
-    final issues = ['Invoices', 'Receipts', 'Account', 'Other'];
+  Widget _buildIssueSelector(AppLocalizations l10n) {
+    selectedIssue ??= l10n.issueInvoices;
+    final issues = [
+      l10n.issueInvoices,
+      l10n.issueReceipts,
+      l10n.issueAccount,
+      l10n.issueOther,
+    ];
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -136,7 +144,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionLabel('ISSUE TYPE'),
+          _buildSectionLabel(l10n.issueType),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -167,7 +175,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
     );
   }
 
-  Widget _buildMessageCard() {
+  Widget _buildMessageCard(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
@@ -178,7 +186,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionLabel('MESSAGE'),
+          _buildSectionLabel(l10n.message),
           const SizedBox(height: 12),
           TextField(
             controller: _messageController,
@@ -186,7 +194,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
             maxLines: 5,
             style: GoogleFonts.inter(color: _textPrimary),
             decoration: InputDecoration(
-              hintText: 'Describe what happened...',
+              hintText: l10n.describeIssue,
               hintStyle: GoogleFonts.inter(color: _textMuted),
               filled: true,
               fillColor: _surfaceCard,
@@ -209,7 +217,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _isSending ? null : _sendSupportRequest,
+              onPressed: _isSending ? null : () => _sendSupportRequest(l10n),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _accent,
                 foregroundColor: Colors.white,
@@ -231,7 +239,7 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
                     )
                   : const Icon(Icons.send_outlined, size: 18),
               label: Text(
-                _isSending ? 'SENDING...' : 'SEND REQUEST',
+                _isSending ? l10n.sending : l10n.sendRequest,
                 style: GoogleFonts.inter(fontWeight: FontWeight.w800),
               ),
             ),
@@ -241,29 +249,29 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
     );
   }
 
-  Future<void> _sendSupportRequest() async {
+  Future<void> _sendSupportRequest(AppLocalizations l10n) async {
     final message = _messageController.text.trim();
 
     if (message.isEmpty) {
-      _showSupportError("Please write a message first.");
+      _showSupportError(l10n.writeMessageFirst);
       return;
     }
 
     setState(() => _isSending = true);
 
     try {
-      await sendSupportEmail(issueType: selectedIssue, message: message);
+      await sendSupportEmail(issueType: selectedIssue!, message: message);
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Request sent successfully")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.requestSentSuccessfully)));
 
       _messageController.clear();
     } catch (e) {
       if (!mounted) return;
-      _showSupportError("Failed to send request. Try again.");
+      _showSupportError(l10n.failedToSendRequest);
     } finally {
       if (mounted) {
         setState(() => _isSending = false);

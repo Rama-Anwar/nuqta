@@ -9,9 +9,6 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get profile => 'Profile';
-
-  @override
   String get business => 'BUSINESS';
 
   @override
@@ -168,6 +165,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invoices => 'Invoices';
 
   @override
+  String get profile => 'Profile';
+
+  @override
   String get somethingWrong => 'Something went wrong';
 
   @override
@@ -214,4 +214,186 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dec => 'DEC';
+
+  @override
+  String get newIntakeReceipt => 'New Intake / Receipt';
+
+  @override
+  String get draft => 'Draft';
+
+  @override
+  String get orderInformation => 'Order Information';
+
+  @override
+  String get customerSupplierName => 'Customer/Supplier Name';
+
+  @override
+  String get enterName => 'Enter name';
+
+  @override
+  String get invoiceIdOptional => 'Invoice ID (Optional)';
+
+  @override
+  String get date => 'Date';
+
+  @override
+  String get jod => 'JOD';
+
+  @override
+  String get addItem => 'Add Item';
+
+  @override
+  String get itemName => 'Item Name';
+
+  @override
+  String get scanOrTypeItem => 'Scan or type item';
+
+  @override
+  String get quantity => 'Quantity';
+
+  @override
+  String get addItemButton => 'ADD ITEM';
+
+  @override
+  String itemsCount(Object count) {
+    return '$count Items';
+  }
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get profit => 'Profit';
+
+  @override
+  String get items => 'Items';
+
+  @override
+  String get subtotal => 'Subtotal';
+
+  @override
+  String get tax => 'Tax (10%)';
+
+  @override
+  String get totalCost => 'Total Cost';
+
+  @override
+  String get totalAmount => 'Total Amount';
+
+  @override
+  String get approveInvoice => 'APPROVE INVOICE';
+
+  @override
+  String get noItemsAdded => 'No items added yet.';
+
+  @override
+  String loadedFromWaitingList(Object customer) {
+    return 'Loaded \"$customer\" from waiting list.';
+  }
+
+  @override
+  String get addValidItem => 'Add a valid item, quantity, and price.';
+
+  @override
+  String get addAtLeastOneItem => 'Add at least one item before saving.';
+
+  @override
+  String get unnamedCustomer => 'Unnamed Customer';
+
+  @override
+  String get invoiceApprovedProcessed => 'Invoice approved & processed!';
+
+  @override
+  String get receiptSavedDashboardUpdated => 'Receipt saved and dashboard updated.';
+
+  @override
+  String get invoiceApprovedNotificationFailed => 'Invoice approved, but finalization notification failed.';
+
+  @override
+  String failedSaveApproveInvoice(Object error) {
+    return 'Failed to save or approve invoice: $error';
+  }
+
+  @override
+  String failedSaveReceipt(Object error) {
+    return 'Failed to save receipt: $error';
+  }
+
+  @override
+  String get needHelp => 'Need help?';
+
+  @override
+  String get supportIntro => 'Send us the issue details and the support team will follow up.';
+
+  @override
+  String get issueType => 'ISSUE TYPE';
+
+  @override
+  String get issueInvoices => 'Invoices';
+
+  @override
+  String get issueReceipts => 'Receipts';
+
+  @override
+  String get issueAccount => 'Account';
+
+  @override
+  String get issueOther => 'Other';
+
+  @override
+  String get message => 'MESSAGE';
+
+  @override
+  String get describeIssue => 'Describe what happened...';
+
+  @override
+  String get sendRequest => 'SEND REQUEST';
+
+  @override
+  String get sending => 'SENDING...';
+
+  @override
+  String get writeMessageFirst => 'Please write a message first.';
+
+  @override
+  String get requestSentSuccessfully => 'Request sent successfully';
+
+  @override
+  String get failedToSendRequest => 'Failed to send request. Try again.';
+
+  @override
+  String get technicalSupportTitle => 'Technical Support';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String get usernameRequired => 'Username is required';
+
+  @override
+  String get securePassword => 'Secure Password';
+
+  @override
+  String get passwordRequired => 'Password is required';
+
+  @override
+  String get reset => 'RESET';
+
+  @override
+  String get loginToConsole => 'Login to Console';
+
+  @override
+  String get securedByInfrastructure => 'Secured by Nuqta Core Infrastructure';
+
+  @override
+  String get loginFailed => 'Login failed';
+
+  @override
+  String get noUserFoundForEmail => 'No user found for this email.';
+
+  @override
+  String get wrongPassword => 'Wrong password.';
+
+  @override
+  String get invalidEmail => 'Invalid email.';
 }

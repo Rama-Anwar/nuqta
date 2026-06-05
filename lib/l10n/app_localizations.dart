@@ -95,12 +95,6 @@ abstract class AppLocalizations {
     Locale('en')
   ];
 
-  /// No description provided for @profile.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-  String get profile;
-
   /// No description provided for @business.
   ///
   /// In en, this message translates to:
@@ -401,6 +395,12 @@ abstract class AppLocalizations {
   /// **'Invoices'**
   String get invoices;
 
+  /// No description provided for @profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
   /// No description provided for @somethingWrong.
   ///
   /// In en, this message translates to:
@@ -496,6 +496,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'DEC'**
   String get dec;
+
+  /// No description provided for @newIntakeReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'New Intake / Receipt'**
+  String get newIntakeReceipt;
+
+  /// No description provided for @draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get draft;
+
+  /// No description provided for @orderInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Information'**
+  String get orderInformation;
+
+  /// No description provided for @customerSupplierName.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer/Supplier Name'**
+  String get customerSupplierName;
+
+  /// No description provided for @enterName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter name'**
+  String get enterName;
+
+  /// No description provided for @invoiceIdOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice ID (Optional)'**
+  String get invoiceIdOptional;
+
+  /// No description provided for @date.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get date;
+
+  /// No description provided for @jod.
+  ///
+  /// In en, this message translates to:
+  /// **'JOD'**
+  String get jod;
+
+  /// No description provided for @addItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Item'**
+  String get addItem;
+
+  /// No description provided for @itemName.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Name'**
+  String get itemName;
+
+  /// No description provided for @scanOrTypeItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan or type item'**
+  String get scanOrTypeItem;
+
+  /// No description provided for @quantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get quantity;
+
+  /// No description provided for @addItemButton.
+  ///
+  /// In en, this message translates to:
+  /// **'ADD ITEM'**
+  String get addItemButton;
+
+  /// No description provided for @itemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Items'**
+  String itemsCount(Object count);
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @profit.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get profit;
+
+  /// No description provided for @items.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get items;
+
+  /// No description provided for @subtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get subtotal;
+
+  /// No description provided for @tax.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax (10%)'**
+  String get tax;
+
+  /// No description provided for @totalCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Cost'**
+  String get totalCost;
+
+  /// No description provided for @totalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Amount'**
+  String get totalAmount;
+
+  /// No description provided for @approveInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'APPROVE INVOICE'**
+  String get approveInvoice;
+
+  /// No description provided for @noItemsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'No items added yet.'**
+  String get noItemsAdded;
+
+  /// No description provided for @loadedFromWaitingList.
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded \"{customer}\" from waiting list.'**
+  String loadedFromWaitingList(Object customer);
+
+  /// No description provided for @addValidItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a valid item, quantity, and price.'**
+  String get addValidItem;
+
+  /// No description provided for @addAtLeastOneItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one item before saving.'**
+  String get addAtLeastOneItem;
+
+  /// No description provided for @unnamedCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed Customer'**
+  String get unnamedCustomer;
+
+  /// No description provided for @invoiceApprovedProcessed.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice approved & processed!'**
+  String get invoiceApprovedProcessed;
+
+  /// No description provided for @receiptSavedDashboardUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt saved and dashboard updated.'**
+  String get receiptSavedDashboardUpdated;
+
+  /// No description provided for @invoiceApprovedNotificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice approved, but finalization notification failed.'**
+  String get invoiceApprovedNotificationFailed;
+
+  /// No description provided for @failedSaveApproveInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save or approve invoice: {error}'**
+  String failedSaveApproveInvoice(Object error);
+
+  /// No description provided for @failedSaveReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save receipt: {error}'**
+  String failedSaveReceipt(Object error);
+
+  /// No description provided for @needHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Need help?'**
+  String get needHelp;
+
+  /// No description provided for @supportIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Send us the issue details and the support team will follow up.'**
+  String get supportIntro;
+
+  /// No description provided for @issueType.
+  ///
+  /// In en, this message translates to:
+  /// **'ISSUE TYPE'**
+  String get issueType;
+
+  /// No description provided for @issueInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get issueInvoices;
+
+  /// No description provided for @issueReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts'**
+  String get issueReceipts;
+
+  /// No description provided for @issueAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get issueAccount;
+
+  /// No description provided for @issueOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get issueOther;
+
+  /// No description provided for @message.
+  ///
+  /// In en, this message translates to:
+  /// **'MESSAGE'**
+  String get message;
+
+  /// No description provided for @describeIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what happened...'**
+  String get describeIssue;
+
+  /// No description provided for @sendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'SEND REQUEST'**
+  String get sendRequest;
+
+  /// No description provided for @sending.
+  ///
+  /// In en, this message translates to:
+  /// **'SENDING...'**
+  String get sending;
+
+  /// No description provided for @writeMessageFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please write a message first.'**
+  String get writeMessageFirst;
+
+  /// No description provided for @requestSentSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent successfully'**
+  String get requestSentSuccessfully;
+
+  /// No description provided for @failedToSendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send request. Try again.'**
+  String get failedToSendRequest;
+
+  /// No description provided for @technicalSupportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Support'**
+  String get technicalSupportTitle;
+
+  /// No description provided for @username.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get username;
+
+  /// No description provided for @usernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Username is required'**
+  String get usernameRequired;
+
+  /// No description provided for @securePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure Password'**
+  String get securePassword;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is required'**
+  String get passwordRequired;
+
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'RESET'**
+  String get reset;
+
+  /// No description provided for @loginToConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Login to Console'**
+  String get loginToConsole;
+
+  /// No description provided for @securedByInfrastructure.
+  ///
+  /// In en, this message translates to:
+  /// **'Secured by Nuqta Core Infrastructure'**
+  String get securedByInfrastructure;
+
+  /// No description provided for @loginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed'**
+  String get loginFailed;
+
+  /// No description provided for @noUserFoundForEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'No user found for this email.'**
+  String get noUserFoundForEmail;
+
+  /// No description provided for @wrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong password.'**
+  String get wrongPassword;
+
+  /// No description provided for @invalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid email.'**
+  String get invalidEmail;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

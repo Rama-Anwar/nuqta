@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:invoice_ai/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'nav.dart';
@@ -29,6 +30,7 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    final l10n = AppLocalizations.of(context)!;
     final email = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -49,14 +51,14 @@ class _LoginPageState extends State<LoginPage> {
 
       Navigator.of(context).pushReplacementNamed(AppRoutes.dash);
     } on FirebaseAuthException catch (e) {
-      String message = 'Login failed';
+      String message = l10n.loginFailed;
 
       if (e.code == 'user-not-found') {
-        message = 'No user found for this email.';
+        message = l10n.noUserFoundForEmail;
       } else if (e.code == 'wrong-password') {
-        message = 'Wrong password.';
+        message = l10n.wrongPassword;
       } else if (e.code == 'invalid-email') {
-        message = 'Invalid email.';
+        message = l10n.invalidEmail;
       }
 
       ScaffoldMessenger.of(
@@ -65,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Something went wrong')));
+      ).showSnackBar(SnackBar(content: Text(l10n.somethingWrong)));
     }
 
     if (mounted) {
@@ -77,6 +79,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppPalette.backgroundScaffold,
       body: SafeArea(
@@ -88,9 +92,10 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const _BrandHeader(),
+                  _BrandHeader(l10n: l10n),
                   const SizedBox(height: 24),
                   _LoginCard(
+                    l10n: l10n,
                     formKey: _formKey,
                     usernameController: _usernameController,
                     passwordController: _passwordController,
@@ -108,17 +113,19 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class _BrandHeader extends StatelessWidget {
-  const _BrandHeader();
+  final AppLocalizations l10n;
+
+  const _BrandHeader({required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: const [
-        _LogoMark(),
-        SizedBox(height: 20),
+      children: [
+        const _LogoMark(),
+        const SizedBox(height: 20),
         Text(
-          'Invoice AI',
-          style: TextStyle(
+          l10n.invoiceAppTitle,
+          style: const TextStyle(
             color: AppPalette.textPrimary,
             fontSize: 40,
             fontWeight: FontWeight.w700,
@@ -153,6 +160,7 @@ class _LogoMark extends StatelessWidget {
 }
 
 class _LoginCard extends StatelessWidget {
+  final AppLocalizations l10n;
   final GlobalKey<FormState> formKey;
   final TextEditingController usernameController;
   final TextEditingController passwordController;
@@ -160,6 +168,7 @@ class _LoginCard extends StatelessWidget {
   final Future<void> Function() onSubmit;
 
   const _LoginCard({
+    required this.l10n,
     required this.formKey,
     required this.usernameController,
     required this.passwordController,
@@ -182,7 +191,7 @@ class _LoginCard extends StatelessWidget {
             key: formKey,
             child: Column(
               children: [
-                _FieldLabel(text: 'Username'),
+                _FieldLabel(text: l10n.username),
                 _LoginTextField(
                   controller: usernameController,
                   hintText: 'admin',
@@ -190,33 +199,14 @@ class _LoginCard extends StatelessWidget {
                   obscureText: false,
                   validator: (value) {
                     final v = (value ?? '').trim();
-                    if (v.isEmpty) return 'Username is required';
+                    if (v.isEmpty) return l10n.usernameRequired;
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const _FieldLabel(text: 'Secure Password'),
-                    TextButton(
-                      onPressed: () {},
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        foregroundColor: AppPalette.textMuted,
-                        minimumSize: const Size(24, 24),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text(
-                        'RESET',
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 0.7,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+                  children: [_FieldLabel(text: l10n.securePassword)],
                 ),
                 _LoginTextField(
                   controller: passwordController,
@@ -224,7 +214,7 @@ class _LoginCard extends StatelessWidget {
                   keyboardType: TextInputType.visiblePassword,
                   obscureText: true,
                   validator: (value) {
-                    if ((value ?? '').isEmpty) return 'Password is required';
+                    if ((value ?? '').isEmpty) return l10n.passwordRequired;
                     return null;
                   },
                 ),
@@ -253,9 +243,9 @@ class _LoginCard extends StatelessWidget {
                               color: AppPalette.textPrimary,
                             ),
                           )
-                        : const Text(
-                            'Login to Console',
-                            style: TextStyle(
+                        : Text(
+                            l10n.loginToConsole,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -268,10 +258,10 @@ class _LoginCard extends StatelessWidget {
           const SizedBox(height: 28),
           Container(height: 1, color: AppPalette.borderLowContrast),
           const SizedBox(height: 18),
-          const Text(
-            'Secured by Nuqta Core Infrastructure',
+          Text(
+            l10n.securedByInfrastructure,
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppPalette.textMuted, fontSize: 14),
+            style: const TextStyle(color: AppPalette.textMuted, fontSize: 14),
           ),
         ],
       ),
