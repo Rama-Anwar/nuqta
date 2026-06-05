@@ -1,6 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:invoice_ai/helper/sendSupportEmail.dart';
 
 import 'nav.dart';
 
@@ -242,7 +243,13 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
   }
 
   Future<void> _sendSupportRequest() async {
+    final issueType = selectedIssue.trim();
     final message = _messageController.text.trim();
+
+    if (issueType.isEmpty) {
+      _showSupportError("Please select an issue type.");
+      return;
+    }
 
     if (message.isEmpty) {
       _showSupportError("Please write a message first.");
@@ -252,7 +259,38 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
     setState(() => _isSending = true);
 
     try {
-      await sendSupportEmail(issueType: selectedIssue, message: message);
+      final user = FirebaseAuth.instance.currentUser;
+      final userId = user?.uid;
+      final userEmail = user?.email?.trim();
+
+      if (userId == null || userId.isEmpty) {
+        throw StateError('A signed-in user is required.');
+      }
+
+      if (userEmail == null || userEmail.isEmpty) {
+        throw StateError('A user email is required.');
+      }
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      final organizationId = userDoc.data()?['organization_id'];
+
+      if (organizationId is! String || organizationId.trim().isEmpty) {
+        throw StateError('A valid organization_id is required.');
+      }
+
+      await FirebaseFirestore.instance.collection('support_tickets').add({
+        'user_id': userId,
+        'organization_id': organizationId.trim(),
+        'user_email': userEmail,
+        'issue_type': issueType,
+        'message': message,
+        'status': 'new',
+        'source': 'flutter_app',
+        'created_at': FieldValue.serverTimestamp(),
+      });
 
       if (!mounted) return;
 

@@ -784,24 +784,6 @@ class _InvoicesPageState extends State<InvoicesPage> {
     return labels[month - 1];
   }
 
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
-
   String _currency(double value) => '\$${value.toStringAsFixed(2)}';
 
   double _invoiceCost(InvoiceModel invoice) => invoice.items.fold<double>(
@@ -868,9 +850,9 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
             icon: Icon(Icons.delete_rounded, color: AppColors.errorMuted),
             tooltip: l10n.deleteInvoiceTitle,
             onPressed: () async {
-              final localContext = context;
+              final navigator = Navigator.of(context);
               final confirmed = await showDialog<bool>(
-                context: localContext,
+                context: context,
                 builder: (ctx) => AlertDialog(
                   backgroundColor: AppColors.surfaceCard,
                   shape: RoundedRectangleBorder(
@@ -908,7 +890,6 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                   ],
                 ),
               );
-              final navigator = Navigator.of(localContext);
               if (confirmed == true) {
                 await ReceiptStore.instance.deleteReceipt(_invoice.id);
                 if (!mounted) return;

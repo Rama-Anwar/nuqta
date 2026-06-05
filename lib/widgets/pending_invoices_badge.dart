@@ -331,6 +331,8 @@ class _InvoiceTileState extends State<_InvoiceTile> {
   bool _loading = false;
 
   Future<void> _handleTap() async {
+    if (_loading) return;
+
     setState(() => _loading = true);
     try {
       // Mark as in_progress in Firestore immediately

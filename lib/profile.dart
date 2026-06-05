@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart';
-import 'package:intl/intl.dart';
 import 'package:invoice_ai/helper/date_formatting_helpers.dart';
 import 'package:invoice_ai/helper/getCurrentUserProfile.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
@@ -114,6 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final prefs = await SharedPreferences.getInstance();
       final savedLastLogin = prefs.getString('last_login_at');
 
+      if (!mounted) return;
       setState(() {
         priceSheetUrl = loadedPriceSheetUrl;
         lastLoginAt = savedLastLogin == null
@@ -122,6 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
