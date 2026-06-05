@@ -45,7 +45,62 @@
     "placeholders": {
       "date": {}
     }
-  }
+  },
+  "languageEnglishShort": "EN",
+  "languageArabicShort": "عر",
+
+
+    "invoiceAppTitle": "فواتير AI",
+
+  "deleteInvoiceTitle": "حذف الفاتورة",
+  "deleteInvoiceMessage": "حذف \"{name}\"؟\nلا يمكن التراجع عن هذا الإجراء.",
+  "cancel": "إلغاء",
+  "delete": "حذف",
+
+  "invoiceLedger": "سجل الفواتير",
+
+  "year": "السنة",
+  "month": "الشهر",
+  "select": "اختر",
+  "all": "الكل",
+
+  "outstanding": "غير مدفوع",
+  "collected": "تم التحصيل",
+  "totalProfit": "إجمالي الربح",
+
+  "cost": "التكلفة",
+  "total": "المجموع",
+  "totalProfitLabel": "إجمالي الربح",
+
+  "lineItems": "عناصر الفاتورة",
+  "editLineItems": "تعديل العناصر",
+
+  "qty": "الكمية",
+  "price": "السعر",
+  "costLabel": "التكلفة",
+
+  "dashboard": "لوحة التحكم",
+  "receipts": "الإيصالات",
+  "invoices": "الفواتير",
+  "profile": "الملف الشخصي",
+  "somethingWrong": "حدث عطل",
+  "pickDate": "اختر تاريخاً",
+  "paid": "تم الدفع",
+  "save": "حفظ",
+
+  "jan": "يناير",
+  "feb": "فبراير",
+  "mar": "مارس",
+  "apr": "أبريل",
+  "may": "مايو",
+  "jun": "يونيو",
+  "jul": "يوليو",
+  "aug": "أغسطس",
+  "sep": "سبتمبر",
+  "oct": "أكتوبر",
+  "nov": "نوفمبر",
+  "dec": "ديسمبر"
+
 
 
 }

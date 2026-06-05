@@ -518,13 +518,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          _buildLanguageSelector(),
+          _buildLanguageSelector(l10n),
         ],
       ),
     );
   }
 
-  Widget _buildLanguageSelector() {
+  Widget _buildLanguageSelector(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
@@ -535,8 +535,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildLangToggle('EN', 'ENGLISH'),
-          _buildLangToggle('AR', 'ARABIC'),
+          _buildLangToggle(l10n.languageEnglishShort, 'ENGLISH'),
+          _buildLangToggle(l10n.languageArabicShort, 'ARABIC'),
         ],
       ),
     );

@@ -86,4 +86,132 @@ class AppLocalizationsEn extends AppLocalizations {
   String lastLoginDate(Object date) {
     return 'Last login: $date';
   }
+
+  @override
+  String get languageEnglishShort => 'EN';
+
+  @override
+  String get languageArabicShort => 'AR';
+
+  @override
+  String get invoiceAppTitle => 'Invoice AI';
+
+  @override
+  String get deleteInvoiceTitle => 'Delete Invoice';
+
+  @override
+  String deleteInvoiceMessage(Object name) {
+    return 'Delete \"$name\"?\nThis action cannot be undone.';
+  }
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get invoiceLedger => 'Invoice Ledger';
+
+  @override
+  String get year => 'Year';
+
+  @override
+  String get month => 'Month';
+
+  @override
+  String get select => 'Select';
+
+  @override
+  String get all => 'ALL';
+
+  @override
+  String get outstanding => 'OUTSTANDING';
+
+  @override
+  String get collected => 'COLLECTED';
+
+  @override
+  String get totalProfit => 'TOTAL PROFIT';
+
+  @override
+  String get cost => 'Cost';
+
+  @override
+  String get total => 'Total';
+
+  @override
+  String get totalProfitLabel => 'Total Profit';
+
+  @override
+  String get lineItems => 'Line Items';
+
+  @override
+  String get editLineItems => 'Edit Line Items';
+
+  @override
+  String get qty => 'Qty';
+
+  @override
+  String get price => 'Price';
+
+  @override
+  String get costLabel => 'Cost';
+
+  @override
+  String get dashboard => 'Dashboard';
+
+  @override
+  String get receipts => 'Receipts';
+
+  @override
+  String get invoices => 'Invoices';
+
+  @override
+  String get somethingWrong => 'Something went wrong';
+
+  @override
+  String get pickDate => 'Pick date';
+
+  @override
+  String get paid => 'PAID';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get jan => 'JAN';
+
+  @override
+  String get feb => 'FEB';
+
+  @override
+  String get mar => 'MAR';
+
+  @override
+  String get apr => 'APR';
+
+  @override
+  String get may => 'MAY';
+
+  @override
+  String get jun => 'JUN';
+
+  @override
+  String get jul => 'JUL';
+
+  @override
+  String get aug => 'AUG';
+
+  @override
+  String get sep => 'SEP';
+
+  @override
+  String get oct => 'OCT';
+
+  @override
+  String get nov => 'NOV';
+
+  @override
+  String get dec => 'DEC';
 }

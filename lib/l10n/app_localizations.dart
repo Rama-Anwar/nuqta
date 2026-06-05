@@ -244,6 +244,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last login: {date}'**
   String lastLoginDate(Object date);
+
+  /// No description provided for @languageEnglishShort.
+  ///
+  /// In en, this message translates to:
+  /// **'EN'**
+  String get languageEnglishShort;
+
+  /// No description provided for @languageArabicShort.
+  ///
+  /// In en, this message translates to:
+  /// **'AR'**
+  String get languageArabicShort;
+
+  /// No description provided for @invoiceAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice AI'**
+  String get invoiceAppTitle;
+
+  /// No description provided for @deleteInvoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Invoice'**
+  String get deleteInvoiceTitle;
+
+  /// No description provided for @deleteInvoiceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?\nThis action cannot be undone.'**
+  String deleteInvoiceMessage(Object name);
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @invoiceLedger.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Ledger'**
+  String get invoiceLedger;
+
+  /// No description provided for @year.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get year;
+
+  /// No description provided for @month.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get month;
+
+  /// No description provided for @select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get select;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'ALL'**
+  String get all;
+
+  /// No description provided for @outstanding.
+  ///
+  /// In en, this message translates to:
+  /// **'OUTSTANDING'**
+  String get outstanding;
+
+  /// No description provided for @collected.
+  ///
+  /// In en, this message translates to:
+  /// **'COLLECTED'**
+  String get collected;
+
+  /// No description provided for @totalProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL PROFIT'**
+  String get totalProfit;
+
+  /// No description provided for @cost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get cost;
+
+  /// No description provided for @total.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get total;
+
+  /// No description provided for @totalProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Profit'**
+  String get totalProfitLabel;
+
+  /// No description provided for @lineItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Line Items'**
+  String get lineItems;
+
+  /// No description provided for @editLineItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Line Items'**
+  String get editLineItems;
+
+  /// No description provided for @qty.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get qty;
+
+  /// No description provided for @price.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get price;
+
+  /// No description provided for @costLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get costLabel;
+
+  /// No description provided for @dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get dashboard;
+
+  /// No description provided for @receipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts'**
+  String get receipts;
+
+  /// No description provided for @invoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get invoices;
+
+  /// No description provided for @somethingWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get somethingWrong;
+
+  /// No description provided for @pickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get pickDate;
+
+  /// No description provided for @paid.
+  ///
+  /// In en, this message translates to:
+  /// **'PAID'**
+  String get paid;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @jan.
+  ///
+  /// In en, this message translates to:
+  /// **'JAN'**
+  String get jan;
+
+  /// No description provided for @feb.
+  ///
+  /// In en, this message translates to:
+  /// **'FEB'**
+  String get feb;
+
+  /// No description provided for @mar.
+  ///
+  /// In en, this message translates to:
+  /// **'MAR'**
+  String get mar;
+
+  /// No description provided for @apr.
+  ///
+  /// In en, this message translates to:
+  /// **'APR'**
+  String get apr;
+
+  /// No description provided for @may.
+  ///
+  /// In en, this message translates to:
+  /// **'MAY'**
+  String get may;
+
+  /// No description provided for @jun.
+  ///
+  /// In en, this message translates to:
+  /// **'JUN'**
+  String get jun;
+
+  /// No description provided for @jul.
+  ///
+  /// In en, this message translates to:
+  /// **'JUL'**
+  String get jul;
+
+  /// No description provided for @aug.
+  ///
+  /// In en, this message translates to:
+  /// **'AUG'**
+  String get aug;
+
+  /// No description provided for @sep.
+  ///
+  /// In en, this message translates to:
+  /// **'SEP'**
+  String get sep;
+
+  /// No description provided for @oct.
+  ///
+  /// In en, this message translates to:
+  /// **'OCT'**
+  String get oct;
+
+  /// No description provided for @nov.
+  ///
+  /// In en, this message translates to:
+  /// **'NOV'**
+  String get nov;
+
+  /// No description provided for @dec.
+  ///
+  /// In en, this message translates to:
+  /// **'DEC'**
+  String get dec;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

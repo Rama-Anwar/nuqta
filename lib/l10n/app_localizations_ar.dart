@@ -86,4 +86,132 @@ class AppLocalizationsAr extends AppLocalizations {
   String lastLoginDate(Object date) {
     return 'آخر تسجيل دخول: $date';
   }
+
+  @override
+  String get languageEnglishShort => 'EN';
+
+  @override
+  String get languageArabicShort => 'عر';
+
+  @override
+  String get invoiceAppTitle => 'فواتير AI';
+
+  @override
+  String get deleteInvoiceTitle => 'حذف الفاتورة';
+
+  @override
+  String deleteInvoiceMessage(Object name) {
+    return 'حذف \"$name\"؟\nلا يمكن التراجع عن هذا الإجراء.';
+  }
+
+  @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get invoiceLedger => 'سجل الفواتير';
+
+  @override
+  String get year => 'السنة';
+
+  @override
+  String get month => 'الشهر';
+
+  @override
+  String get select => 'اختر';
+
+  @override
+  String get all => 'الكل';
+
+  @override
+  String get outstanding => 'غير مدفوع';
+
+  @override
+  String get collected => 'تم التحصيل';
+
+  @override
+  String get totalProfit => 'إجمالي الربح';
+
+  @override
+  String get cost => 'التكلفة';
+
+  @override
+  String get total => 'المجموع';
+
+  @override
+  String get totalProfitLabel => 'إجمالي الربح';
+
+  @override
+  String get lineItems => 'عناصر الفاتورة';
+
+  @override
+  String get editLineItems => 'تعديل العناصر';
+
+  @override
+  String get qty => 'الكمية';
+
+  @override
+  String get price => 'السعر';
+
+  @override
+  String get costLabel => 'التكلفة';
+
+  @override
+  String get dashboard => 'لوحة التحكم';
+
+  @override
+  String get receipts => 'الإيصالات';
+
+  @override
+  String get invoices => 'الفواتير';
+
+  @override
+  String get somethingWrong => 'حدث عطل';
+
+  @override
+  String get pickDate => 'اختر تاريخاً';
+
+  @override
+  String get paid => 'تم الدفع';
+
+  @override
+  String get save => 'حفظ';
+
+  @override
+  String get jan => 'يناير';
+
+  @override
+  String get feb => 'فبراير';
+
+  @override
+  String get mar => 'مارس';
+
+  @override
+  String get apr => 'أبريل';
+
+  @override
+  String get may => 'مايو';
+
+  @override
+  String get jun => 'يونيو';
+
+  @override
+  String get jul => 'يوليو';
+
+  @override
+  String get aug => 'أغسطس';
+
+  @override
+  String get sep => 'سبتمبر';
+
+  @override
+  String get oct => 'أكتوبر';
+
+  @override
+  String get nov => 'نوفمبر';
+
+  @override
+  String get dec => 'ديسمبر';
 }

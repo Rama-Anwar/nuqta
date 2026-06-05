@@ -45,7 +45,64 @@
     "placeholders": {
       "date": {}
     }
-  }
+  },
+
+  "languageEnglishShort": "EN",
+  "languageArabicShort": "AR",
+
+
+
+  "invoiceAppTitle": "Invoice AI",
+
+  "deleteInvoiceTitle": "Delete Invoice",
+  "deleteInvoiceMessage": "Delete \"{name}\"?\nThis action cannot be undone.",
+  "cancel": "Cancel",
+  "delete": "Delete",
+
+  "invoiceLedger": "Invoice Ledger",
+
+  "year": "Year",
+  "month": "Month",
+  "select": "Select",
+  "all": "ALL",
+
+  "outstanding": "OUTSTANDING",
+  "collected": "COLLECTED",
+  "totalProfit": "TOTAL PROFIT",
+
+  "cost": "Cost",
+  "total": "Total",
+  "totalProfitLabel": "Total Profit",
+
+  "lineItems": "Line Items",
+  "editLineItems": "Edit Line Items",
+
+  "qty": "Qty",
+  "price": "Price",
+  "costLabel": "Cost",
+
+  "dashboard": "Dashboard",
+  "receipts": "Receipts",
+  "invoices": "Invoices",
+  "profile": "Profile",
+
+  "somethingWrong": "Something went wrong",
+  "pickDate": "Pick date",
+  "paid": "PAID",
+  "save": "Save",
+
+  "jan": "JAN",
+  "feb": "FEB",
+  "mar": "MAR",
+  "apr": "APR",
+  "may": "MAY",
+  "jun": "JUN",
+  "jul": "JUL",
+  "aug": "AUG",
+  "sep": "SEP",
+  "oct": "OCT",
+  "nov": "NOV",
+  "dec": "DEC"
 
 
 }
