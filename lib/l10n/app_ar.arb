@@ -1,9 +1,6 @@
 {
 
 
-
-  "profile": "الملف الشخصي",
-
   "business": "المنشأة",
   "registeredName": "الاسم المسجل",
   "unknownBusiness": "منشأة غير معروفة",
@@ -87,7 +84,7 @@
   "pickDate": "اختر تاريخاً",
   "paid": "تم الدفع",
   "save": "حفظ",
-
+  "items": "منتجات",
   "jan": "يناير",
   "feb": "فبراير",
   "mar": "مارس",
@@ -99,8 +96,112 @@
   "sep": "سبتمبر",
   "oct": "أكتوبر",
   "nov": "نوفمبر",
-  "dec": "ديسمبر"
+  "dec": "ديسمبر",
 
+
+  "newIntakeReceipt": "إدخال فاتورة / سند قبض",
+  "draft": "مسودة",
+  "jod": "JOD",
+
+  "orderInformation": "معلومات الفاتورة",
+  "customerSupplierName": "اسم العميل / المورد",
+  "enterName": "أدخل الاسم",
+  "invoiceIdOptional": "رقم الفاتورة (اختياري)",
+  "date": "التاريخ",
+
+  "addItem": "إضافة عنصر",
+  "itemName": "اسم العنصر",
+  "scanOrTypeItem": "امسح أو أدخل اسم العنصر",
+  "quantity": "الكمية",
+  "addItemButton": "إضافة عنصر",
+
+  "itemsCount": "{count} عنصر",
+  "@itemsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+
+  "description": "الوصف",
+  "profit": "الربح",
+
+  "subtotal": "المجموع الفرعي",
+  "tax": "الضريبة (10٪)",
+  "totalCost": "إجمالي التكلفة",
+  "totalAmount": "المبلغ الإجمالي",
+
+  "approveInvoice": "اعتماد الفاتورة",
+
+  "noItemsAdded": "لم تتم إضافة أي عناصر بعد.",
+
+  "loadedFromWaitingList": "تم تحميل \"{customer}\" من قائمة الانتظار.",
+  "@loadedFromWaitingList": {
+    "placeholders": {
+      "customer": {}
+    }
+  },
+
+  "addValidItem": "أدخل عنصراً وكمية وسعراً صالحين.",
+  "addAtLeastOneItem": "أضف عنصراً واحداً على الأقل قبل الحفظ.",
+
+  "unnamedCustomer": "عميل غير مسمى",
+
+  "invoiceApprovedProcessed": "تم اعتماد الفاتورة ومعالجتها بنجاح!",
+  "receiptSavedDashboardUpdated": "تم حفظ السند وتحديث لوحة التحكم.",
+  "invoiceApprovedNotificationFailed": "تم اعتماد الفاتورة ولكن فشل إرسال إشعار الإنهاء.",
+
+  "failedSaveApproveInvoice": "تعذر حفظ أو اعتماد الفاتورة: {error}",
+  "@failedSaveApproveInvoice": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "failedSaveReceipt": "تعذر حفظ السند: {error}",
+  "@failedSaveReceipt": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "needHelp": "بحاجة إلى مساعدة؟",
+  "supportIntro": "أرسل تفاصيل المشكلة وسيقوم فريق الدعم بالتواصل معك.",
+
+  "issueType": "نوع المشكلة",
+
+  "issueInvoices": "الفواتير",
+  "issueReceipts": "الإيصالات",
+  "issueAccount": "الحساب",
+  "issueOther": "أخرى",
+
+  "message": "الرسالة",
+  "describeIssue": "اشرح ما الذي حدث...",
+
+  "sendRequest": "إرسال الطلب",
+  "sending": "جارٍ الإرسال...",
+
+  "writeMessageFirst": "يرجى كتابة الرسالة أولاً.",
+  "requestSentSuccessfully": "تم إرسال الطلب بنجاح",
+  "failedToSendRequest": "تعذر إرسال الطلب. حاول مرة أخرى.",
+
+  "technicalSupportTitle": "الدعم الفني",
+
+  "username": "اسم المستخدم",
+  "usernameRequired": "اسم المستخدم مطلوب",
+
+  "securePassword": "كلمة المرور",
+  "passwordRequired": "كلمة المرور مطلوبة",
+
+  "reset": "إعادة تعيين",
+
+  "loginToConsole": "تسجيل الدخول",
+
+  "securedByInfrastructure": "مؤمّن بواسطة البنية التحتية لنقطة",
+
+  "loginFailed": "فشل تسجيل الدخول",
+  "noUserFoundForEmail": "لا يوجد مستخدم بهذا البريد الإلكتروني.",
+  "wrongPassword": "كلمة المرور غير صحيحة.",
+  "invalidEmail": "البريد الإلكتروني غير صالح."
 
 
 }

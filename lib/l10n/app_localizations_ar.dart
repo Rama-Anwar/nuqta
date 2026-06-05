@@ -9,9 +9,6 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get profile => 'الملف الشخصي';
-
-  @override
   String get business => 'المنشأة';
 
   @override
@@ -168,6 +165,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invoices => 'الفواتير';
 
   @override
+  String get profile => 'الملف الشخصي';
+
+  @override
   String get somethingWrong => 'حدث عطل';
 
   @override
@@ -214,4 +214,186 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dec => 'ديسمبر';
+
+  @override
+  String get newIntakeReceipt => 'إدخال فاتورة / سند قبض';
+
+  @override
+  String get draft => 'مسودة';
+
+  @override
+  String get orderInformation => 'معلومات الفاتورة';
+
+  @override
+  String get customerSupplierName => 'اسم العميل / المورد';
+
+  @override
+  String get enterName => 'أدخل الاسم';
+
+  @override
+  String get invoiceIdOptional => 'رقم الفاتورة (اختياري)';
+
+  @override
+  String get date => 'التاريخ';
+
+  @override
+  String get jod => 'JOD';
+
+  @override
+  String get addItem => 'إضافة عنصر';
+
+  @override
+  String get itemName => 'اسم العنصر';
+
+  @override
+  String get scanOrTypeItem => 'امسح أو أدخل اسم العنصر';
+
+  @override
+  String get quantity => 'الكمية';
+
+  @override
+  String get addItemButton => 'إضافة عنصر';
+
+  @override
+  String itemsCount(Object count) {
+    return '$count عنصر';
+  }
+
+  @override
+  String get description => 'الوصف';
+
+  @override
+  String get profit => 'الربح';
+
+  @override
+  String get items => 'منتجات';
+
+  @override
+  String get subtotal => 'المجموع الفرعي';
+
+  @override
+  String get tax => 'الضريبة (10٪)';
+
+  @override
+  String get totalCost => 'إجمالي التكلفة';
+
+  @override
+  String get totalAmount => 'المبلغ الإجمالي';
+
+  @override
+  String get approveInvoice => 'اعتماد الفاتورة';
+
+  @override
+  String get noItemsAdded => 'لم تتم إضافة أي عناصر بعد.';
+
+  @override
+  String loadedFromWaitingList(Object customer) {
+    return 'تم تحميل \"$customer\" من قائمة الانتظار.';
+  }
+
+  @override
+  String get addValidItem => 'أدخل عنصراً وكمية وسعراً صالحين.';
+
+  @override
+  String get addAtLeastOneItem => 'أضف عنصراً واحداً على الأقل قبل الحفظ.';
+
+  @override
+  String get unnamedCustomer => 'عميل غير مسمى';
+
+  @override
+  String get invoiceApprovedProcessed => 'تم اعتماد الفاتورة ومعالجتها بنجاح!';
+
+  @override
+  String get receiptSavedDashboardUpdated => 'تم حفظ السند وتحديث لوحة التحكم.';
+
+  @override
+  String get invoiceApprovedNotificationFailed => 'تم اعتماد الفاتورة ولكن فشل إرسال إشعار الإنهاء.';
+
+  @override
+  String failedSaveApproveInvoice(Object error) {
+    return 'تعذر حفظ أو اعتماد الفاتورة: $error';
+  }
+
+  @override
+  String failedSaveReceipt(Object error) {
+    return 'تعذر حفظ السند: $error';
+  }
+
+  @override
+  String get needHelp => 'بحاجة إلى مساعدة؟';
+
+  @override
+  String get supportIntro => 'أرسل تفاصيل المشكلة وسيقوم فريق الدعم بالتواصل معك.';
+
+  @override
+  String get issueType => 'نوع المشكلة';
+
+  @override
+  String get issueInvoices => 'الفواتير';
+
+  @override
+  String get issueReceipts => 'الإيصالات';
+
+  @override
+  String get issueAccount => 'الحساب';
+
+  @override
+  String get issueOther => 'أخرى';
+
+  @override
+  String get message => 'الرسالة';
+
+  @override
+  String get describeIssue => 'اشرح ما الذي حدث...';
+
+  @override
+  String get sendRequest => 'إرسال الطلب';
+
+  @override
+  String get sending => 'جارٍ الإرسال...';
+
+  @override
+  String get writeMessageFirst => 'يرجى كتابة الرسالة أولاً.';
+
+  @override
+  String get requestSentSuccessfully => 'تم إرسال الطلب بنجاح';
+
+  @override
+  String get failedToSendRequest => 'تعذر إرسال الطلب. حاول مرة أخرى.';
+
+  @override
+  String get technicalSupportTitle => 'الدعم الفني';
+
+  @override
+  String get username => 'اسم المستخدم';
+
+  @override
+  String get usernameRequired => 'اسم المستخدم مطلوب';
+
+  @override
+  String get securePassword => 'كلمة المرور';
+
+  @override
+  String get passwordRequired => 'كلمة المرور مطلوبة';
+
+  @override
+  String get reset => 'إعادة تعيين';
+
+  @override
+  String get loginToConsole => 'تسجيل الدخول';
+
+  @override
+  String get securedByInfrastructure => 'مؤمّن بواسطة البنية التحتية لنقطة';
+
+  @override
+  String get loginFailed => 'فشل تسجيل الدخول';
+
+  @override
+  String get noUserFoundForEmail => 'لا يوجد مستخدم بهذا البريد الإلكتروني.';
+
+  @override
+  String get wrongPassword => 'كلمة المرور غير صحيحة.';
+
+  @override
+  String get invalidEmail => 'البريد الإلكتروني غير صالح.';
 }

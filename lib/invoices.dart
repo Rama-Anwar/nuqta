@@ -916,7 +916,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
             ),
             const SizedBox(height: 4),
             Text(
-              _formatDate(_invoice.date),
+              formatDate(context, _invoice.date),
               style: GoogleFonts.inter(color: AppColors.textMuted),
             ),
             const SizedBox(height: 16),
@@ -982,7 +982,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
 
                     children: [
                       Text(
-                        'Cost',
+                        l10n.costLabel,
                         style: GoogleFonts.inter(
                           color: AppColors.textMuted,
                           fontWeight: FontWeight.w700,

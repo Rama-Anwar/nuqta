@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoice_ai/l10n/app_localizations.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -18,6 +19,7 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (MediaQuery.sizeOf(context).width >= 768) {
       return const SizedBox.shrink();
     }
@@ -32,8 +34,8 @@ class AppBottomNavBar extends StatelessWidget {
         top: false,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(_NavEntry.entries.length, (index) {
-            final entry = _NavEntry.entries[index];
+          children: List.generate(_NavEntry.entries(l10n).length, (index) {
+            final entry = _NavEntry.entries(l10n)[index];
             final isActive = index == activeIndex;
             final color = isActive
                 ? const Color(0xFFEE671C)
@@ -139,24 +141,24 @@ class _NavEntry {
     required this.route,
   });
 
-  static const entries = <_NavEntry>[
+  static List<_NavEntry> entries(AppLocalizations l10n) => [
     _NavEntry(
-      label: 'Dashboard',
+      label: l10n.dashboard,
       icon: Icons.dashboard_rounded,
       route: AppRoutes.dash,
     ),
     _NavEntry(
-      label: 'Receipts',
+      label: l10n.receipts,
       icon: Icons.receipt_long_rounded,
       route: AppRoutes.receipts,
     ),
     _NavEntry(
-      label: 'Invoices',
+      label: l10n.invoices,
       icon: Icons.description_rounded,
       route: AppRoutes.invoices,
     ),
     _NavEntry(
-      label: 'Profile',
+      label: l10n.profile,
       icon: Icons.person_rounded,
       route: AppRoutes.profile,
     ),

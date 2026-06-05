@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:invoice_ai/l10n/app_localizations.dart';
 
 import 'data/receipt_store.dart';
 import 'nav.dart';
@@ -50,16 +51,16 @@ class _ReceivePageState extends State<ReceivePage> {
   double get _tax => 0.0;
   double get _total => _subtotal;
 
-  void _addItem() {
+  void _addItem(AppLocalizations l10n) {
     final name = _itemController.text.trim();
     final quantity = int.tryParse(_quantityController.text.trim()) ?? 0;
     final price = double.tryParse(_unitPriceController.text.trim()) ?? 0;
     final costPrice = double.tryParse(_costPriceController.text.trim()) ?? 0;
 
     if (name.isEmpty || quantity <= 0 || price <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add a valid item, quantity, and Price.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.addValidItem)));
       return;
     }
 
@@ -111,6 +112,8 @@ class _ReceivePageState extends State<ReceivePage> {
   /// waiting-list sheet. The Firestore status is already flipped to
   /// "in_progress" by the tile widget before this is called.
   void _loadFromPendingInvoice(PendingInvoice inv) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (!mounted) return;
 
     setState(() {
@@ -135,20 +138,20 @@ class _ReceivePageState extends State<ReceivePage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Loaded "${inv.customerName}" from waiting list.'),
+        content: Text(l10n.loadedFromWaitingList(inv.customerName)),
         backgroundColor: AppPalette.primaryContainer,
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(AppLocalizations l10n) async {
     if (_isSubmitting) return;
 
     if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least one item before saving.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.addAtLeastOneItem)));
       return;
     }
 
@@ -156,7 +159,7 @@ class _ReceivePageState extends State<ReceivePage> {
 
     final docId = _activePendingDocId;
     final customerName = _customerController.text.trim().isEmpty
-        ? 'Unnamed Customer'
+        ? l10n.unnamedCustomer
         : _customerController.text.trim();
     final invoiceId = _invoiceController.text.trim();
     final editedItems = _items
@@ -266,10 +269,10 @@ class _ReceivePageState extends State<ReceivePage> {
               const SizedBox(width: 10),
               Text(
                 webhookFailed
-                    ? 'Invoice approved, but finalization notification failed.'
+                    ? l10n.invoiceApprovedNotificationFailed
                     : docId != null
-                    ? 'Invoice approved & processed!'
-                    : 'Receipt saved and dashboard updated.',
+                    ? l10n.invoiceApprovedProcessed
+                    : l10n.receiptSavedDashboardUpdated,
               ),
             ],
           ),
@@ -289,8 +292,8 @@ class _ReceivePageState extends State<ReceivePage> {
         SnackBar(
           content: Text(
             docId != null
-                ? 'Failed to save or approve invoice: $error'
-                : 'Failed to save receipt: $error',
+                ? l10n.failedSaveApproveInvoice(error)
+                : l10n.failedSaveReceipt(error),
           ),
           backgroundColor: AppPalette.errorMuted,
           behavior: SnackBarBehavior.floating,
@@ -303,6 +306,7 @@ class _ReceivePageState extends State<ReceivePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppPalette.backgroundScaffold,
       body: SafeArea(
@@ -339,13 +343,13 @@ class _ReceivePageState extends State<ReceivePage> {
                                 subtotal: _subtotal,
                                 tax: _tax,
                                 total: _total,
-                                onAddItem: _addItem,
+                                onAddItem: () => _addItem(l10n),
                                 onRemoveItem: _removeItem,
                                 onNameChanged: _updateItemName,
                                 onQtyChanged: _updateItemQuantity,
                                 onPriceChanged: _updateItemPrice,
                                 onCostChanged: _updateItemCost,
-                                onSubmit: _submit,
+                                onSubmit: () => _submit(l10n),
                                 isSubmitting: _isSubmitting,
                               )
                             : _MobileLayout(
@@ -360,13 +364,13 @@ class _ReceivePageState extends State<ReceivePage> {
                                 subtotal: _subtotal,
                                 tax: _tax,
                                 total: _total,
-                                onAddItem: _addItem,
+                                onAddItem: () => _addItem(l10n),
                                 onRemoveItem: _removeItem,
                                 onNameChanged: _updateItemName,
                                 onQtyChanged: _updateItemQuantity,
                                 onPriceChanged: _updateItemPrice,
                                 onCostChanged: _updateItemCost,
-                                onSubmit: _submit,
+                                onSubmit: () => _submit(l10n),
                                 isSubmitting: _isSubmitting,
                               ),
                       ),
@@ -388,7 +392,7 @@ class _ReceivePageState extends State<ReceivePage> {
             children: [
               _MobileActionBar(
                 total: _total,
-                onSubmit: _submit,
+                onSubmit: () => _submit(l10n),
                 isSubmitting: _isSubmitting,
               ),
               const AppBottomNavBar(activeIndex: 1),
@@ -408,6 +412,7 @@ class _TopAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -422,9 +427,9 @@ class _TopAppBar extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'New Intake / Receipt',
+                    l10n.newIntakeReceipt,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -447,8 +452,8 @@ class _TopAppBar extends StatelessWidget {
               color: AppPalette.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(999),
             ),
-            child: const Text(
-              'Draft',
+            child: Text(
+              l10n.draft,
               style: TextStyle(
                 color: AppPalette.textMuted,
                 fontSize: 12,
@@ -507,6 +512,7 @@ class _DesktopLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -515,25 +521,25 @@ class _DesktopLayout extends StatelessWidget {
           child: Column(
             children: [
               _CardShell(
-                title: 'Order Information',
+                title: l10n.orderInformation,
                 child: Column(
                   children: [
                     _LabeledInput(
                       controller: customerController,
-                      label: 'Customer/Supplier Name',
-                      hint: 'Enter name',
+                      label: l10n.customerSupplierName,
+                      hint: l10n.enterName,
                     ),
                     const SizedBox(height: 16),
                     _LabeledInput(
                       controller: invoiceController,
-                      label: 'Invoice ID (Optional)',
+                      label: l10n.invoiceIdOptional,
                       hint: 'INV-0000',
                       mono: true,
                     ),
                     const SizedBox(height: 16),
                     _LabeledInput(
                       controller: dateController,
-                      label: 'Date',
+                      label: l10n.date,
                       hint: '2023-10-27',
                       mono: true,
                       isDate: true,
@@ -543,13 +549,13 @@ class _DesktopLayout extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               _CardShell(
-                title: 'Add Item',
+                title: l10n.addItem,
                 child: Column(
                   children: [
                     _LabeledInput(
                       controller: itemController,
-                      label: 'Item Name',
-                      hint: 'Scan or type item',
+                      label: l10n.itemName,
+                      hint: l10n.scanOrTypeItem,
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -558,7 +564,7 @@ class _DesktopLayout extends StatelessWidget {
                         Expanded(
                           child: _LabeledInput(
                             controller: quantityController,
-                            label: 'Quantity',
+                            label: l10n.quantity,
                             hint: '0',
                             mono: true,
                             isNumber: true,
@@ -568,7 +574,7 @@ class _DesktopLayout extends StatelessWidget {
                         Expanded(
                           child: _LabeledInput(
                             controller: unitPriceController,
-                            label: 'Price',
+                            label: l10n.price,
                             hint: '0.00',
                             mono: true,
                             isNumber: true,
@@ -579,7 +585,7 @@ class _DesktopLayout extends StatelessWidget {
                         Expanded(
                           child: _LabeledInput(
                             controller: costPriceController,
-                            label: "Cost",
+                            label: l10n.costLabel,
                             hint: "0.00",
                             mono: true,
                             prefix: '\$',
@@ -602,8 +608,8 @@ class _DesktopLayout extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.add, size: 18),
-                        label: const Text(
-                          'ADD ITEM',
+                        label: Text(
+                          l10n.addItem,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1,
@@ -683,29 +689,30 @@ class _MobileLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _CardShell(
-          title: 'Order Information',
+          title: l10n.orderInformation,
           child: Column(
             children: [
               _LabeledInput(
                 controller: customerController,
-                label: 'Customer/Supplier Name',
-                hint: 'Enter name',
+                label: l10n.customerSupplierName,
+                hint: l10n.enterName,
               ),
               const SizedBox(height: 16),
               _LabeledInput(
                 controller: invoiceController,
-                label: 'Invoice ID (Optional)',
+                label: l10n.invoiceIdOptional,
                 hint: 'INV-0000',
                 mono: true,
               ),
               const SizedBox(height: 16),
               _LabeledInput(
                 controller: dateController,
-                label: 'Date',
+                label: l10n.date,
                 hint: '2023-10-27',
                 mono: true,
                 isDate: true,
@@ -715,13 +722,13 @@ class _MobileLayout extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         _CardShell(
-          title: 'Add Item',
+          title: l10n.addItem,
           child: Column(
             children: [
               _LabeledInput(
                 controller: itemController,
-                label: 'Item Name',
-                hint: 'Scan or type item',
+                label: l10n.itemName,
+                hint: l10n.scanOrTypeItem,
               ),
               const SizedBox(height: 16),
               Row(
@@ -729,7 +736,7 @@ class _MobileLayout extends StatelessWidget {
                   Expanded(
                     child: _LabeledInput(
                       controller: quantityController,
-                      label: 'Quantity',
+                      label: l10n.quantity,
                       hint: '0',
                       mono: true,
                       isNumber: true,
@@ -739,7 +746,7 @@ class _MobileLayout extends StatelessWidget {
                   Expanded(
                     child: _LabeledInput(
                       controller: unitPriceController,
-                      label: 'Price',
+                      label: l10n.price,
                       hint: '0.00',
                       mono: true,
                       isNumber: true,
@@ -751,7 +758,7 @@ class _MobileLayout extends StatelessWidget {
                   Expanded(
                     child: _LabeledInput(
                       controller: costPriceController,
-                      label: 'Cost',
+                      label: l10n.cost,
                       hint: '0.00',
                       mono: true,
                       isNumber: true,
@@ -775,8 +782,8 @@ class _MobileLayout extends StatelessWidget {
                     ),
                   ),
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text(
-                    'ADD ITEM',
+                  label: Text(
+                    l10n.addItem,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1,
@@ -837,10 +844,11 @@ class _ItemsPanelDesktop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _CardShell(
-      title: 'Line Items',
+      title: l10n.lineItems,
       trailing: Text(
-        '${items.length} Items',
+        '${items.length} ${l10n.items}',
         style: const TextStyle(
           color: AppPalette.textMuted,
           fontFamily: 'monospace',
@@ -856,7 +864,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
                 bottom: BorderSide(color: AppPalette.borderLowContrast),
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 SizedBox(
                   width: 28,
@@ -864,12 +872,12 @@ class _ItemsPanelDesktop extends StatelessWidget {
                 ),
                 Expanded(
                   flex: 7,
-                  child: Text('Description', style: _HeadCellStyle.style),
+                  child: Text(l10n.description, style: _HeadCellStyle.style),
                 ),
                 SizedBox(
                   width: 88,
                   child: Text(
-                    'Qty',
+                    l10n.qty,
                     textAlign: TextAlign.center,
                     style: _HeadCellStyle.style,
                   ),
@@ -877,7 +885,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
                 SizedBox(
                   width: 130,
                   child: Text(
-                    'Price',
+                    l10n.price,
                     textAlign: TextAlign.center,
                     style: _HeadCellStyle.style,
                   ),
@@ -885,7 +893,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
                 SizedBox(
                   width: 140,
                   child: Text(
-                    'Total',
+                    l10n.total,
                     textAlign: TextAlign.right,
                     style: _HeadCellStyle.style,
                   ),
@@ -953,10 +961,11 @@ class _ItemsPanelMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _CardShell(
-      title: 'Line Items',
+      title: l10n.lineItems,
       trailing: Text(
-        '${items.length} Items',
+        '${items.length} ${l10n.items}',
         style: const TextStyle(
           color: AppPalette.textMuted,
           fontFamily: 'monospace',
@@ -1011,6 +1020,7 @@ class _DesktopTotalsSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -1019,15 +1029,19 @@ class _DesktopTotalsSummary extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _SummaryRow(label: 'Subtotal', value: _currency(subtotal)),
+          _SummaryRow(label: l10n.subtotal, value: _currency(subtotal, l10n)),
           const SizedBox(height: 8),
-          _SummaryRow(label: 'Tax (10%)', value: _currency(tax)),
+          _SummaryRow(label: l10n.tax, value: _currency(tax, l10n)),
           const SizedBox(height: 12),
           const Divider(color: AppPalette.borderLowContrast, height: 1),
           const SizedBox(height: 12),
-          _SummaryRow(label: 'Total Cost', value: _currency(totalCost)),
+          _SummaryRow(label: l10n.totalCost, value: _currency(totalCost, l10n)),
           const SizedBox(height: 8),
-          _SummaryRow(label: 'Total', value: _currency(total), bold: true),
+          _SummaryRow(
+            label: l10n.total,
+            value: _currency(total, l10n),
+            bold: true,
+          ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -1051,11 +1065,11 @@ class _DesktopTotalsSummary extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'APPROVE INVOICE',
+                          l10n.approveInvoice,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1,
@@ -1105,6 +1119,7 @@ class _MobileActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: const BoxDecoration(
@@ -1120,8 +1135,8 @@ class _MobileActionBar extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Total Amount',
+                Text(
+                  l10n.totalAmount,
                   style: TextStyle(
                     color: AppPalette.textMuted,
                     fontSize: 10,
@@ -1130,7 +1145,7 @@ class _MobileActionBar extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  _currency(total),
+                  _currency(total, l10n),
                   style: const TextStyle(
                     color: AppPalette.textPrimary,
                     fontSize: 24,
@@ -1163,11 +1178,12 @@ class _MobileActionBar extends StatelessWidget {
                           color: Colors.white,
                         ),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'APPROVE INVOICE',
+                            l10n.approveInvoice,
+
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1,
@@ -1341,6 +1357,7 @@ class _ItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppPalette.borderLowContrast)),
@@ -1366,11 +1383,11 @@ class _ItemRow extends StatelessWidget {
               onChanged: onNameChanged,
               keyboardType: TextInputType.text,
               style: const TextStyle(color: AppPalette.textPrimary),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 isCollapsed: true,
-                hintText: 'Item Name',
+                hintText: l10n.itemName,
                 hintStyle: TextStyle(color: AppPalette.textMuted),
               ),
             ),
@@ -1381,8 +1398,8 @@ class _ItemRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  'Qty',
+                Text(
+                  l10n.qty,
                   style: TextStyle(color: AppPalette.textMuted, fontSize: 11),
                 ),
                 const SizedBox(height: 4),
@@ -1423,8 +1440,8 @@ class _ItemRow extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const Text(
-                        'Price',
+                      Text(
+                        l10n.price,
                         style: TextStyle(
                           color: AppPalette.textMuted,
                           fontSize: 11,
@@ -1469,8 +1486,8 @@ class _ItemRow extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const Text(
-                        'Cost',
+                      Text(
+                        l10n.costLabel,
                         style: TextStyle(
                           color: AppPalette.textMuted,
                           fontSize: 11,
@@ -1526,8 +1543,8 @@ class _ItemRow extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text(
-                            'Total',
+                          Text(
+                            l10n.total,
                             style: TextStyle(
                               color: AppPalette.textMuted,
                               fontSize: 11,
@@ -1535,7 +1552,7 @@ class _ItemRow extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _currency(line.total),
+                            _currency(line.total, l10n),
                             style: const TextStyle(
                               color: AppPalette.textPrimary,
                               fontFamily: 'monospace',
@@ -1568,7 +1585,7 @@ class _ItemRow extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _currency(line.profit),
+                            _currency(line.profit, l10n),
                             style: const TextStyle(
                               color: AppPalette.textPrimary,
                               fontFamily: 'monospace',
@@ -1619,6 +1636,7 @@ class _MobileItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -1654,11 +1672,11 @@ class _MobileItemCard extends StatelessWidget {
                     color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
                     isCollapsed: true,
-                    hintText: 'Item Name',
+                    hintText: l10n.itemName,
                     hintStyle: TextStyle(color: AppPalette.textMuted),
                   ),
                 ),
@@ -1676,7 +1694,7 @@ class _MobileItemCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _MobileEditableStatBlock(
-                  label: 'Qty',
+                  label: l10n.qty,
                   value: line.quantity.toString(),
                   onChanged: onQtyChanged,
                   keyboardType: const TextInputType.numberWithOptions(
@@ -1698,8 +1716,8 @@ class _MobileItemCard extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const Text(
-                        'Price',
+                      Text(
+                        l10n.price,
                         style: TextStyle(
                           color: AppPalette.textMuted,
                           fontSize: 11,
@@ -1730,8 +1748,8 @@ class _MobileItemCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Cost',
+                      Text(
+                        l10n.cost,
                         style: TextStyle(
                           color: AppPalette.textMuted,
                           fontSize: 11,
@@ -1772,14 +1790,14 @@ class _MobileItemCard extends StatelessWidget {
                     Transform.translate(
                       offset: const Offset(0, -6),
                       child: _MobileStatBlock(
-                        label: 'Total',
-                        value: _currency(line.total),
+                        label: l10n.total,
+                        value: _currency(line.total, l10n),
                       ),
                     ),
                     const SizedBox(height: 8),
                     _MobileStatBlock(
-                      label: 'Profit',
-                      value: _currency(line.profit),
+                      label: l10n.profit,
+                      value: _currency(line.profit, l10n),
                     ),
                   ],
                 ),
@@ -1884,10 +1902,11 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 180,
       alignment: Alignment.center,
-      child: const Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
@@ -1897,7 +1916,7 @@ class _EmptyState extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            'No items added yet.',
+            l10n.noItemsAdded,
             style: TextStyle(color: AppPalette.textMuted),
           ),
         ],
@@ -1961,7 +1980,8 @@ class _ReceiptLine {
   double get profit => (unitPrice - costPrice) * quantity;
 }
 
-String _currency(double value) => 'JOD ${value.toStringAsFixed(2)}';
+String _currency(double value, AppLocalizations l10n) =>
+    '${l10n.jod} ${value.toStringAsFixed(2)}';
 
 class AppPalette {
   static const Color backgroundScaffold = Color(0xFF1A1D20);
