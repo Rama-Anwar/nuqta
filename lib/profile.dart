@@ -275,7 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
-      bottomNavigationBar: const AppBottomNavBar(activeIndex: 3),
+      bottomNavigationBar: AppBottomNavBar(activeIndex: 3),
     );
   }
 
