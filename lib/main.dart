@@ -13,6 +13,7 @@ import 'dash.dart';
 import 'invoices.dart';
 import 'nav.dart';
 import 'recive.dart';
+import 'splash_screen.dart';
 import 'technical_support.dart';
 
 Future<void> main() async {
@@ -68,9 +69,11 @@ class MyApp extends StatelessWidget {
         AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.support: (_) => const TechnicalSupportPage(),
       },
-      home: FirebaseAuth.instance.currentUser != null
-          ? const DashPage()
-          : const LoginPage(),
+      home: SplashScreen(
+        nextScreen: FirebaseAuth.instance.currentUser != null
+            ? const DashPage()
+            : const LoginPage(),
+      ),
     );
   }
 }
