@@ -19,11 +19,7 @@ import 'technical_support.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-
   final localeProvider = LocaleProvider();
-  await localeProvider.loadLocale();
   runApp(
     ChangeNotifierProvider.value(value: localeProvider, child: const MyApp()),
   );
@@ -70,11 +66,20 @@ class MyApp extends StatelessWidget {
         AppRoutes.support: (_) => const TechnicalSupportPage(),
       },
       home: SplashScreen(
-        nextScreen: FirebaseAuth.instance.currentUser != null
-            ? const DashPage()
-            : const LoginPage(),
+        nextScreenBuilder: () => _loadStartupScreen(localeProvider),
       ),
     );
+  }
+
+  Future<Widget> _loadStartupScreen(LocaleProvider localeProvider) async {
+    await Future.wait<void>([
+      Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+      localeProvider.loadLocale(),
+    ]);
+
+    return FirebaseAuth.instance.currentUser != null
+        ? const DashPage()
+        : const LoginPage();
   }
 }
 

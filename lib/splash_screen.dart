@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
-  final Widget nextScreen;
+  final Future<Widget> Function() nextScreenBuilder;
 
-  const SplashScreen({super.key, required this.nextScreen});
+  const SplashScreen({super.key, required this.nextScreenBuilder});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -26,11 +26,13 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _start() async {
+    final nextScreenFuture = widget.nextScreenBuilder();
     await Future<void>.delayed(_splashDuration);
+    final nextScreen = await nextScreenFuture;
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
-        pageBuilder: (_, _, _) => widget.nextScreen,
+        pageBuilder: (_, _, _) => nextScreen,
         transitionDuration: const Duration(milliseconds: 360),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
