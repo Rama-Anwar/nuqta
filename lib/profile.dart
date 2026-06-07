@@ -1,9 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:invoice_ai/helper/date_formatting_helpers.dart';
-import 'package:invoice_ai/helper/getCurrentUserProfile.dart';
+import 'package:invoice_ai/helper/get_current_user_profile.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
 import 'package:invoice_ai/login.dart';
 import 'package:invoice_ai/models/user_profile_model.dart';
@@ -40,9 +39,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? priceSheetUrl;
 
   double _billingProgress() {
-    if (profile == null) return 0;
+    if (profile?.billingDate == null) return 0;
 
-    final nextBilling = profile!.billingDate;
+    final nextBilling = profile!.billingDate!;
     final now = DateTime.now();
 
     final cycleStart = DateTime(
@@ -85,36 +84,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfile() async {
     try {
       profile = await getCurrentUserProfile();
-      final currentUser = FirebaseAuth.instance.currentUser;
-      String? loadedPriceSheetUrl;
-
-      if (currentUser != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid)
-            .get();
-        final organizationId = userDoc.data()?['organization_id'];
-
-        if (organizationId is String && organizationId.trim().isNotEmpty) {
-          final organizationDoc = await FirebaseFirestore.instance
-              .collection('organizations')
-              .doc(organizationId.trim())
-              .get();
-          final rawPriceSheetUrl = organizationDoc.data()?['price_sheet_url'];
-
-          if (rawPriceSheetUrl is String &&
-              rawPriceSheetUrl.trim().isNotEmpty) {
-            loadedPriceSheetUrl = rawPriceSheetUrl.trim();
-          }
-        }
-      }
 
       final prefs = await SharedPreferences.getInstance();
       final savedLastLogin = prefs.getString('last_login_at');
 
       if (!mounted) return;
       setState(() {
-        priceSheetUrl = loadedPriceSheetUrl;
+        priceSheetUrl = profile?.isOwner == true
+            ? profile?.priceSheetUrl.trim()
+            : null;
         lastLoginAt = savedLastLogin == null
             ? user?.metadata.lastSignInTime
             : DateTime.tryParse(savedLastLogin);
@@ -131,6 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isOwner = profile?.isOwner == true;
     return Scaffold(
       backgroundColor: AppColors.primaryBg,
       appBar: AppBar(
@@ -171,88 +150,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildSectionCard(
-                  title: l10n.plan,
-                  child: _buildPlanSection(l10n),
-                ),
-                const SizedBox(height: 16),
+                if (isOwner) ...[
+                  _buildSectionCard(
+                    title: l10n.plan,
+                    child: _buildPlanSection(l10n),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 _buildSectionCard(
                   title: l10n.tools,
                   child: Column(
                     children: [
-                      _buildActionRow(
-                        icon: Icons.inventory_2_outlined,
-                        title: l10n.inventorySheet,
-                        subtitle: l10n.manageStockAndProducts,
-                        onTap: () async {
-                          final sheetUrl = priceSheetUrl?.trim();
-                          debugPrint('Inventory Sheet URL: $sheetUrl');
-
-                          final uri = sheetUrl == null
-                              ? null
-                              : Uri.tryParse(sheetUrl);
-                          if (sheetUrl == null ||
-                              sheetUrl.isEmpty ||
-                              uri == null ||
-                              uri.scheme != 'https' ||
-                              uri.host.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.inventorySheetUrlInvalid),
-                              ),
-                            );
-                            return;
-                          }
-
-                          var launched = false;
-                          try {
-                            debugPrint(
-                              'Inventory Sheet external launch attempt.',
-                            );
-                            launched = await launchUrl(
-                              uri,
-                              mode: LaunchMode.externalApplication,
-                            );
-                            debugPrint(
-                              'Inventory Sheet external launch result: $launched',
-                            );
-                          } catch (error, stackTrace) {
-                            debugPrint(
-                              'Inventory Sheet external launch error: $error',
-                            );
-                            debugPrintStack(stackTrace: stackTrace);
-                          }
-
-                          if (!launched) {
-                            try {
-                              debugPrint(
-                                'Inventory Sheet platform-default launch attempt.',
-                              );
-                              launched = await launchUrl(
-                                uri,
-                                mode: LaunchMode.platformDefault,
-                              );
-                              debugPrint(
-                                'Inventory Sheet platform-default launch result: $launched',
-                              );
-                            } catch (error, stackTrace) {
-                              debugPrint(
-                                'Inventory Sheet platform-default launch error: $error',
-                              );
-                              debugPrintStack(stackTrace: stackTrace);
-                            }
-                          }
-
-                          if (!launched && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.unableToOpenInventorySheet),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      _buildDivider(),
+                      if (isOwner) ...[
+                        _buildActionRow(
+                          icon: Icons.inventory_2_outlined,
+                          title: l10n.inventorySheet,
+                          subtitle: l10n.manageStockAndProducts,
+                          onTap: () => _openInventorySheet(l10n),
+                        ),
+                        _buildDivider(),
+                      ],
                       _buildActionRow(
                         icon: Icons.support_agent_outlined,
                         title: l10n.technicalSupport,
@@ -277,6 +194,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
       bottomNavigationBar: AppBottomNavBar(activeIndex: 3),
     );
+  }
+
+  Future<void> _openInventorySheet(AppLocalizations l10n) async {
+    final sheetUrl = priceSheetUrl?.trim();
+    debugPrint('Inventory Sheet URL: $sheetUrl');
+
+    final uri = sheetUrl == null ? null : Uri.tryParse(sheetUrl);
+    if (sheetUrl == null ||
+        sheetUrl.isEmpty ||
+        uri == null ||
+        uri.scheme != 'https' ||
+        uri.host.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.inventorySheetUrlInvalid)));
+      return;
+    }
+
+    var launched = false;
+    try {
+      debugPrint('Inventory Sheet external launch attempt.');
+      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      debugPrint('Inventory Sheet external launch result: $launched');
+    } catch (error, stackTrace) {
+      debugPrint('Inventory Sheet external launch error: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    if (!launched) {
+      try {
+        debugPrint('Inventory Sheet platform-default launch attempt.');
+        launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+        debugPrint('Inventory Sheet platform-default launch result: $launched');
+      } catch (error, stackTrace) {
+        debugPrint('Inventory Sheet platform-default launch error: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    }
+
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.unableToOpenInventorySheet)));
+    }
   }
 
   Widget _buildProfileHeader(AppLocalizations l10n) {
@@ -423,9 +384,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     profile?.billingDate != null
                         ? l10n.billingDate(
-                            formatDate(context, profile!.billingDate),
+                            formatDate(context, profile!.billingDate!),
                           )
-                        : l10n.billingUnavailable,
+                        : 'Billing: Not set',
 
                     style: GoogleFonts.inter(
                       color: AppColors.textDim,
@@ -581,6 +542,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAccountSection(AppLocalizations l10n) {
+    final email = user?.email ?? profile?.email ?? l10n.noEmail;
+
     return Column(
       children: [
         Padding(
@@ -594,12 +557,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user?.email ?? l10n.noEmail,
+                      _accountDisplayName(),
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         color: AppColors.textMain,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _roleLabel(),
+                      style: GoogleFonts.inter(
+                        color: AppColors.accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      email,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: AppColors.textDim,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -652,6 +634,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ],
     );
+  }
+
+  String _accountDisplayName() {
+    final name = profile?.userName.trim();
+    if (name != null && name.isNotEmpty) return name;
+
+    final email = user?.email ?? profile?.email;
+    if (email != null && email.trim().isNotEmpty) return email.trim();
+
+    return 'User';
+  }
+
+  String _roleLabel() {
+    final role = profile?.role.trim().toLowerCase();
+    if (role == 'owner') return 'Owner';
+    return 'Employee';
   }
 
   Widget _buildRowIcon(IconData icon) {

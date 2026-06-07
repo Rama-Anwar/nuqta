@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:invoice_ai/helper/get_current_user_profile.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
 
 import 'data/receipt_store.dart';
@@ -185,7 +186,7 @@ class _ReceivePageState extends State<ReceivePage> {
           date:
               DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
           createdAt: DateTime.now(),
-          status: InvoiceStatus.paid,
+          status: InvoiceStatus.outstanding,
           items: _items
               .map(
                 (line) => ReceiptLineItem(
@@ -230,7 +231,7 @@ class _ReceivePageState extends State<ReceivePage> {
           date:
               DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
           createdAt: DateTime.now(),
-          status: InvoiceStatus.paid,
+          status: InvoiceStatus.outstanding,
           items: _items
               .map(
                 (line) => ReceiptLineItem(
@@ -284,8 +285,18 @@ class _ReceivePageState extends State<ReceivePage> {
         ),
       );
 
+      final profile = await getCurrentUserProfile();
+
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(AppRoutes.dash);
+      final targetRoute = profile?.isOwner == true
+          ? AppRoutes.dash
+          : AppRoutes.receipts;
+      final shell = AppTabScope.maybeOf(context);
+      if (shell?.switchToRoute != null) {
+        shell!.switchToRoute!(targetRoute);
+      } else {
+        Navigator.of(context).pushReplacementNamed(targetRoute);
+      }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -443,24 +454,7 @@ class _TopAppBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // ── Pending-invoices badge button ──────────────────────────────
           PendingInvoicesBadgeButton(onInvoiceSelected: onPendingTap),
-          // ── Draft pill ────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppPalette.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              l10n.draft,
-              style: TextStyle(
-                color: AppPalette.textMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
         ],
       ),
     );

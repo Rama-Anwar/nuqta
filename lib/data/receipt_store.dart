@@ -137,13 +137,13 @@ class ReceiptStore extends ChangeNotifier {
   double salesForMonth(DateTime month) {
     return _receipts
         .where((r) => _isSameMonth(r.date, month))
-        .fold<double>(0, (sum, r) => sum + r.total);
+        .fold<double>(0, (total, r) => total + r.total);
   }
 
   double salesForYear(int year) {
     return _receipts
         .where((r) => r.date.year == year)
-        .fold<double>(0, (sum, r) => sum + r.total);
+        .fold<double>(0, (total, r) => total + r.total);
   }
 
   int receiptsForMonth(DateTime month) =>
@@ -166,7 +166,7 @@ class ReceiptStore extends ChangeNotifier {
       final month = _addMonths(currentMonth, -(months - 1 - index));
       final amount = _receipts
           .where((r) => _isSameMonth(r.date, month))
-          .fold<double>(0, (sum, r) => sum + r.total);
+          .fold<double>(0, (total, r) => total + r.total);
 
       return MonthlyRevenue(label: _monthLabel(month.month), amount: amount);
     });
@@ -255,16 +255,17 @@ class ReceiptRecord {
     required this.status,
   });
 
-  double get subtotal => items.fold<double>(0, (sum, item) => sum + item.total);
+  double get subtotal =>
+      items.fold<double>(0, (total, item) => total + item.total);
   double get tax => 0.0;
   double get total => subtotal;
   double get totalCost => items.fold<double>(
     0,
-    (sum, item) => sum + (item.costPrice * item.quantity),
+    (total, item) => total + (item.costPrice * item.quantity),
   );
   double get profit => subtotal - totalCost;
   double get totalProfit => profit;
-  
+
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'customerName': customerName,
@@ -281,7 +282,7 @@ class ReceiptRecord {
 
   factory ReceiptRecord.fromJson(Map<String, dynamic> json) {
     // Helper that handles both ISO strings and Firestore Timestamps.
-    DateTime _parseDate(dynamic raw) {
+    DateTime parseDate(dynamic raw) {
       if (raw is Timestamp) return raw.toDate();
       return DateTime.tryParse(raw?.toString() ?? '') ?? DateTime.now();
     }
@@ -294,11 +295,11 @@ class ReceiptRecord {
           (json['customerName'] as String?) ??
           'عميل نُقطة',
       invoiceId: json['invoiceId'] as String?,
-      date: _parseDate(json['date']),
-      createdAt: _parseDate(json['createdAt']),
+      date: parseDate(json['date']),
+      createdAt: parseDate(json['createdAt']),
       status: InvoiceStatus.values.firstWhere(
         (e) => e.name == json['status'],
-        orElse: () => InvoiceStatus.paid,
+        orElse: () => InvoiceStatus.outstanding,
       ),
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => ReceiptLineItem.fromJson(e as Map<String, dynamic>))

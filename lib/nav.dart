@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoice_ai/helper/get_current_user_profile.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
 
 class AppRoutes {
@@ -19,10 +20,61 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     if (MediaQuery.sizeOf(context).width >= 768) {
       return const SizedBox.shrink();
     }
+
+    if (AppTabScope.maybeOf(context) != null) {
+      return const SizedBox.shrink();
+    }
+
+    return FutureBuilder(
+      future: getCurrentUserProfile(),
+      builder: (context, snapshot) {
+        return AppBottomNavigationSurface(
+          activeIndex: activeIndex,
+          isOwner: snapshot.data?.isOwner == true,
+        );
+      },
+    );
+  }
+}
+
+class AppTabScope extends InheritedWidget {
+  final void Function(String route)? switchToRoute;
+
+  const AppTabScope({super.key, required super.child, this.switchToRoute});
+
+  static AppTabScope? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<AppTabScope>();
+  }
+
+  @override
+  bool updateShouldNotify(AppTabScope oldWidget) {
+    return switchToRoute != oldWidget.switchToRoute;
+  }
+}
+
+class AppBottomNavigationSurface extends StatelessWidget {
+  final int activeIndex;
+  final bool isOwner;
+  final ValueChanged<AppNavEntry>? onEntryTap;
+
+  const AppBottomNavigationSurface({
+    super.key,
+    required this.activeIndex,
+    required this.isOwner,
+    this.onEntryTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width >= 768) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final entries = AppNavEntry.entries(l10n, isOwner: isOwner);
 
     return Container(
       height: 80,
@@ -34,9 +86,8 @@ class AppBottomNavBar extends StatelessWidget {
         top: false,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(_NavEntry.entries(l10n).length, (index) {
-            final entry = _NavEntry.entries(l10n)[index];
-            final isActive = index == activeIndex;
+          children: entries.map((entry) {
+            final isActive = entry.index == activeIndex;
             final color = isActive
                 ? const Color(0xFFEE671C)
                 : const Color(0xFFDEE2E6).withValues(alpha: 0.62);
@@ -45,7 +96,14 @@ class AppBottomNavBar extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   if (isActive) return;
-                  Navigator.of(context).pushReplacementNamed(entry.route);
+                  final shell = AppTabScope.maybeOf(context);
+                  if (onEntryTap != null) {
+                    onEntryTap!(entry);
+                  } else if (shell?.switchToRoute != null) {
+                    shell!.switchToRoute!(entry.route);
+                  } else {
+                    Navigator.of(context).pushReplacementNamed(entry.route);
+                  }
                 },
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -65,7 +123,7 @@ class AppBottomNavBar extends StatelessWidget {
                 ),
               ),
             );
-          }),
+          }).toList(),
         ),
       ),
     );
@@ -130,37 +188,49 @@ class SectionPlaceholderPage extends StatelessWidget {
   }
 }
 
-class _NavEntry {
+class AppNavEntry {
   final String label;
   final IconData icon;
   final String route;
+  final int index;
 
-  const _NavEntry({
+  const AppNavEntry({
     required this.label,
     required this.icon,
     required this.route,
+    required this.index,
   });
 
-  static List<_NavEntry> entries(AppLocalizations l10n) => [
-    _NavEntry(
-      label: l10n.dashboard,
-      icon: Icons.dashboard_rounded,
-      route: AppRoutes.dash,
-    ),
-    _NavEntry(
-      label: l10n.receipts,
-      icon: Icons.receipt_long_rounded,
-      route: AppRoutes.receipts,
-    ),
-    _NavEntry(
-      label: l10n.invoices,
-      icon: Icons.description_rounded,
-      route: AppRoutes.invoices,
-    ),
-    _NavEntry(
-      label: l10n.profile,
-      icon: Icons.person_rounded,
-      route: AppRoutes.profile,
-    ),
-  ];
+  static List<AppNavEntry> entries(
+    AppLocalizations l10n, {
+    required bool isOwner,
+  }) {
+    return [
+      if (isOwner)
+        AppNavEntry(
+          label: l10n.dashboard,
+          icon: Icons.dashboard_rounded,
+          route: AppRoutes.dash,
+          index: 0,
+        ),
+      AppNavEntry(
+        label: l10n.receipts,
+        icon: Icons.receipt_long_rounded,
+        route: AppRoutes.receipts,
+        index: 1,
+      ),
+      AppNavEntry(
+        label: l10n.invoices,
+        icon: Icons.description_rounded,
+        route: AppRoutes.invoices,
+        index: 2,
+      ),
+      AppNavEntry(
+        label: l10n.profile,
+        icon: Icons.person_rounded,
+        route: AppRoutes.profile,
+        index: 3,
+      ),
+    ];
+  }
 }

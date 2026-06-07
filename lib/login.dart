@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:invoice_ai/helper/get_current_user_profile.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,10 +47,13 @@ class _LoginPageState extends State<LoginPage> {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_login_at', DateTime.now().toIso8601String());
+      final profile = await getCurrentUserProfile();
 
       if (!mounted) return;
 
-      Navigator.of(context).pushReplacementNamed(AppRoutes.dash);
+      Navigator.of(context).pushReplacementNamed(
+        profile?.isOwner == true ? AppRoutes.dash : AppRoutes.receipts,
+      );
     } on FirebaseAuthException catch (e) {
       String message = l10n.loginFailed;
 

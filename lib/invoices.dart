@@ -4,7 +4,9 @@ import 'package:invoice_ai/helper/date_formatting_helpers.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
 
 import 'data/receipt_store.dart';
+import 'helper/get_current_user_profile.dart';
 import 'models/invoice_model.dart';
+import 'models/user_profile_model.dart';
 import 'nav.dart';
 
 class InvoicesPage extends StatefulWidget {
@@ -20,6 +22,13 @@ class _InvoicesPageState extends State<InvoicesPage> {
   String? selectedMonth;
   bool isAllSelected = true;
   DateTime? _selectedDate;
+  late final Future<UserProfile?> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = getCurrentUserProfile();
+  }
 
   // ── Delete helpers ──────────────────────────────────────────────────────
 
@@ -65,7 +74,22 @@ class _InvoicesPageState extends State<InvoicesPage> {
   }
 
   /// Wraps an invoice card with swipe-to-delete (end-to-start).
-  Widget _buildDismissibleCard(InvoiceModel invoice, AppLocalizations l10n) {
+  Widget _buildDismissibleCard(
+    InvoiceModel invoice,
+    AppLocalizations l10n, {
+    required bool canDeleteInvoices,
+    required bool canChangeStatus,
+    required bool canViewFinancials,
+  }) {
+    if (!canDeleteInvoices) {
+      return _buildInvoiceCard(
+        invoice,
+        l10n,
+        canChangeStatus: canChangeStatus,
+        canViewFinancials: canViewFinancials,
+      );
+    }
+
     return Dismissible(
       key: Key(invoice.id),
       direction: DismissDirection.endToStart,
@@ -82,7 +106,12 @@ class _InvoicesPageState extends State<InvoicesPage> {
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white, size: 28),
       ),
-      child: _buildInvoiceCard(invoice, l10n),
+      child: _buildInvoiceCard(
+        invoice,
+        l10n,
+        canChangeStatus: canChangeStatus,
+        canViewFinancials: canViewFinancials,
+      ),
     );
   }
 
@@ -233,157 +262,184 @@ class _InvoicesPageState extends State<InvoicesPage> {
           child: Divider(color: AppColors.borderLowContrast, height: 1),
         ),
       ),
-      body: StreamBuilder<List<ReceiptRecord>>(
-        stream: ReceiptStore.instance.receiptsStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: FutureBuilder<UserProfile?>(
+        future: _profileFuture,
+        builder: (context, profileSnapshot) {
+          final isOwner = profileSnapshot.data?.isOwner == true;
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                l10n.somethingWrong,
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-            );
-          }
+          return StreamBuilder<List<ReceiptRecord>>(
+            stream: ReceiptStore.instance.receiptsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          final receipts = snapshot.data ?? [];
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    l10n.somethingWrong,
+                    style: GoogleFonts.inter(color: Colors.white),
+                  ),
+                );
+              }
 
-          final invoices = _mapInvoices(receipts);
+              final receipts = snapshot.data ?? [];
 
-          final visibleInvoices = _visibleInvoices(invoices, l10n);
+              final invoices = _mapInvoices(receipts);
 
-          final outstandingTotal = visibleInvoices
-              .where((invoice) => invoice.status != InvoiceStatus.paid)
-              .fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
+              final visibleInvoices = _visibleInvoices(invoices, l10n);
 
-          final collectedTotal = visibleInvoices
-              .where((invoice) => invoice.status == InvoiceStatus.paid)
-              .fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
+              final outstandingTotal = visibleInvoices
+                  .where(
+                    (invoice) => invoice.status == InvoiceStatus.outstanding,
+                  )
+                  .fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
 
-          final earningsTotal = visibleInvoices
-              .where((invoice) => invoice.status == InvoiceStatus.paid)
-              .fold<double>(0, (sum, invoice) => sum + invoice.totalProfit);
+              final collectedTotal = visibleInvoices
+                  .where((invoice) => invoice.status == InvoiceStatus.paid)
+                  .fold<double>(0, (sum, invoice) => sum + invoice.totalAmount);
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
-            children: [
-              _buildFilterSectionWithInvoices(invoices, l10n),
+              final earningsTotal = visibleInvoices
+                  .where((invoice) => invoice.status == InvoiceStatus.paid)
+                  .fold<double>(0, (sum, invoice) => sum + invoice.totalProfit);
 
-              const SizedBox(height: 12),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
                 children: [
-                  Text(
-                    l10n.invoiceLedger,
-                    style: GoogleFonts.inter(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
+                  _buildFilterSectionWithInvoices(invoices, l10n),
+
+                  const SizedBox(height: 12),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l10n.invoiceLedger,
+                        style: GoogleFonts.inter(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            tooltip: l10n.pickDate,
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedDate ?? DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              );
+
+                              if (picked != null) {
+                                setState(() {
+                                  _selectedDate = picked;
+                                  selectedYear = picked.year.toString();
+                                  selectedMonth = _monthLabel(
+                                    picked.month,
+                                    l10n,
+                                  );
+                                  isAllSelected = false;
+                                });
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.calendar_month_outlined,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+
+                          const SizedBox(width: 4),
+
+                          Text(
+                            '${visibleInvoices.length} ${l10n.total}',
+                            style: GoogleFonts.jetBrainsMono(
+                              color: AppColors.accent,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  ...visibleInvoices.map(
+                    (invoice) => _buildDismissibleCard(
+                      invoice,
+                      l10n,
+                      canDeleteInvoices: isOwner,
+                      canChangeStatus: true,
+                      canViewFinancials: isOwner,
                     ),
                   ),
-                  Row(
-                    children: [
-                      IconButton(
-                        tooltip: l10n.pickDate,
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _selectedDate ?? DateTime.now(),
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
 
-                          if (picked != null) {
-                            setState(() {
-                              _selectedDate = picked;
-                              selectedYear = picked.year.toString();
-                              selectedMonth = _monthLabel(picked.month, l10n);
-                              isAllSelected = false;
-                            });
-                          }
-                        },
-                        icon: const Icon(
-                          Icons.calendar_month_outlined,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
+                  const SizedBox(height: 24),
 
-                      const SizedBox(width: 4),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final tileWidth = constraints.maxWidth >= 435
+                          ? (constraints.maxWidth - 32) / 3
+                          : constraints.maxWidth >= 290
+                          ? (constraints.maxWidth - 16) / 2
+                          : constraints.maxWidth;
 
-                      Text(
-                        '${visibleInvoices.length} ${l10n.total}',
-                        style: GoogleFonts.jetBrainsMono(
-                          color: AppColors.accent,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          SizedBox(
+                            width: tileWidth,
+                            child: _buildStatTile(
+                              l10n.outstanding,
+                              _currency(outstandingTotal),
+                              Icons.pending_actions,
+                              AppColors.errorMuted,
+                            ),
+                          ),
+                          SizedBox(
+                            width: tileWidth,
+                            child: _buildStatTile(
+                              l10n.collected,
+                              _currency(collectedTotal),
+                              Icons.account_balance_wallet,
+                              AppColors.successMuted,
+                            ),
+                          ),
+                          if (isOwner)
+                            SizedBox(
+                              width: tileWidth,
+                              child: _buildStatTile(
+                                l10n.totalProfit,
+                                _currency(earningsTotal),
+                                Icons.trending_up,
+                                AppColors.accent,
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ],
-              ),
-
-              const SizedBox(height: 12),
-
-              ...visibleInvoices.map(
-                (invoice) => _buildDismissibleCard(invoice, l10n),
-              ),
-
-              const SizedBox(height: 24),
-
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final tileWidth = constraints.maxWidth >= 435
-                      ? (constraints.maxWidth - 32) / 3
-                      : constraints.maxWidth >= 290
-                      ? (constraints.maxWidth - 16) / 2
-                      : constraints.maxWidth;
-
-                  return Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      SizedBox(
-                        width: tileWidth,
-                        child: _buildStatTile(
-                          l10n.outstanding,
-                          _currency(outstandingTotal),
-                          Icons.pending_actions,
-                          AppColors.errorMuted,
-                        ),
-                      ),
-                      SizedBox(
-                        width: tileWidth,
-                        child: _buildStatTile(
-                          l10n.collected,
-                          _currency(collectedTotal),
-                          Icons.account_balance_wallet,
-                          AppColors.successMuted,
-                        ),
-                      ),
-                      SizedBox(
-                        width: tileWidth,
-                        child: _buildStatTile(
-                          l10n.totalProfit,
-                          _currency(earningsTotal),
-                          Icons.trending_up,
-                          AppColors.accent,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
+              );
+            },
           );
         },
       ),
-      bottomNavigationBar: _buildBottomNav(l10n),
+      bottomNavigationBar: AppTabScope.maybeOf(context) != null
+          ? const SizedBox.shrink()
+          : FutureBuilder<UserProfile?>(
+              future: _profileFuture,
+              builder: (context, snapshot) => _buildBottomNav(
+                l10n,
+                isOwner: snapshot.data?.isOwner == true,
+              ),
+            ),
     );
   }
 
@@ -491,7 +547,12 @@ class _InvoicesPageState extends State<InvoicesPage> {
     );
   }
 
-  Widget _buildInvoiceCard(InvoiceModel invoice, AppLocalizations l10n) {
+  Widget _buildInvoiceCard(
+    InvoiceModel invoice,
+    AppLocalizations l10n, {
+    required bool canChangeStatus,
+    required bool canViewFinancials,
+  }) {
     final costAmount = _invoiceCost(invoice);
 
     return Container(
@@ -545,20 +606,24 @@ class _InvoicesPageState extends State<InvoicesPage> {
                       fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${l10n.costLabel} ${_currency(costAmount)}',
-                    style: GoogleFonts.inter(
-                      color: AppColors.textMuted,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
+                  if (canViewFinancials) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${l10n.costLabel} ${_currency(costAmount)}',
+                      style: GoogleFonts.inter(
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: () => _toggleStatus(invoice),
-                    child: _buildStatusPill(invoice.status, l10n),
-                  ),
+                  canChangeStatus
+                      ? GestureDetector(
+                          onTap: () => _toggleStatus(invoice),
+                          child: _buildStatusPill(invoice.status, l10n),
+                        )
+                      : _buildStatusPill(invoice.status, l10n),
                 ],
               ),
             ],
@@ -583,7 +648,12 @@ class _InvoicesPageState extends State<InvoicesPage> {
                   color: AppColors.textMuted,
                   size: 20,
                 ),
-                onPressed: () => _openDetails(invoice),
+                onPressed: () => _openDetails(
+                  invoice,
+                  canDeleteInvoices: canViewFinancials,
+                  canChangeStatus: canChangeStatus,
+                  canViewFinancials: canViewFinancials,
+                ),
               ),
             ],
           ),
@@ -670,7 +740,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
     );
   }
 
-  Widget _buildBottomNav(AppLocalizations l10n) {
+  Widget _buildBottomNav(AppLocalizations l10n, {required bool isOwner}) {
     return Container(
       height: 72,
       decoration: BoxDecoration(
@@ -682,12 +752,13 @@ class _InvoicesPageState extends State<InvoicesPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(
-              Icons.grid_view_rounded,
-              l10n.dashboard,
-              AppRoutes.dash,
-              false,
-            ),
+            if (isOwner)
+              _buildNavItem(
+                Icons.grid_view_rounded,
+                l10n.dashboard,
+                AppRoutes.dash,
+                false,
+              ),
             _buildNavItem(
               Icons.receipt_long,
               l10n.receipts,
@@ -791,17 +862,37 @@ class _InvoicesPageState extends State<InvoicesPage> {
     (sum, item) => sum + (item.costPrice * item.quantity),
   );
 
-  void _openDetails(InvoiceModel invoice) {
+  void _openDetails(
+    InvoiceModel invoice, {
+    required bool canDeleteInvoices,
+    required bool canChangeStatus,
+    required bool canViewFinancials,
+  }) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => _InvoiceDetailPage(invoice: invoice)),
+      MaterialPageRoute(
+        builder: (_) => _InvoiceDetailPage(
+          invoice: invoice,
+          canDeleteInvoices: canDeleteInvoices,
+          canChangeStatus: canChangeStatus,
+          canViewFinancials: canViewFinancials,
+        ),
+      ),
     );
   }
 }
 
 class _InvoiceDetailPage extends StatefulWidget {
   final InvoiceModel invoice;
+  final bool canDeleteInvoices;
+  final bool canChangeStatus;
+  final bool canViewFinancials;
 
-  const _InvoiceDetailPage({required this.invoice});
+  const _InvoiceDetailPage({
+    required this.invoice,
+    required this.canDeleteInvoices,
+    required this.canChangeStatus,
+    required this.canViewFinancials,
+  });
 
   @override
   State<_InvoiceDetailPage> createState() => _InvoiceDetailPageState();
@@ -817,6 +908,8 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
   }
 
   bool get _isEditable {
+    if (widget.canDeleteInvoices) return true;
+
     final now = DateTime.now();
     return _invoice.date.year == now.year &&
         _invoice.date.month == now.month &&
@@ -827,6 +920,74 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
     0,
     (sum, item) => sum + (item.costPrice * item.quantity),
   );
+
+  Future<void> _toggleStatus() async {
+    final receipt = (await ReceiptStore.instance.receiptsStream().first)
+        .firstWhere((r) => r.id == _invoice.id);
+    final newStatus = _invoice.status == InvoiceStatus.paid
+        ? InvoiceStatus.outstanding
+        : InvoiceStatus.paid;
+
+    final updatedReceipt = ReceiptRecord(
+      id: receipt.id,
+      userUid: receipt.userUid,
+      customerName: receipt.customerName,
+      invoiceId: receipt.invoiceId,
+      date: receipt.date,
+      createdAt: receipt.createdAt,
+      items: receipt.items,
+      status: newStatus,
+    );
+
+    await ReceiptStore.instance.updateReceipt(updatedReceipt);
+    if (!mounted) return;
+
+    setState(() {
+      _invoice = InvoiceModel(
+        id: _invoice.id,
+        userUid: _invoice.userUid,
+        customerName: _invoice.customerName,
+        date: _invoice.date,
+        totalAmount: _invoice.totalAmount,
+        status: newStatus,
+        items: _invoice.items,
+        createdAt: _invoice.createdAt,
+        invoiceId: _invoice.invoiceId,
+      );
+    });
+  }
+
+  Widget _buildDetailStatusPill(InvoiceStatus status, AppLocalizations l10n) {
+    late final Color color;
+    late final String label;
+    switch (status) {
+      case InvoiceStatus.paid:
+        color = AppColors.successMuted;
+        label = l10n.paid;
+        break;
+      case InvoiceStatus.outstanding:
+        color = AppColors.accent;
+        label = l10n.outstanding;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -846,57 +1007,58 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
         actions: [
           if (_isEditable)
             IconButton(icon: const Icon(Icons.edit), onPressed: _openEditor),
-          IconButton(
-            icon: Icon(Icons.delete_rounded, color: AppColors.errorMuted),
-            tooltip: l10n.deleteInvoiceTitle,
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: AppColors.surfaceCard,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  title: Text(
-                    l10n.deleteInvoiceTitle,
-                    style: GoogleFonts.montserrat(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
+          if (widget.canDeleteInvoices)
+            IconButton(
+              icon: Icon(Icons.delete_rounded, color: AppColors.errorMuted),
+              tooltip: l10n.deleteInvoiceTitle,
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: AppColors.surfaceCard,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                  content: Text(
-                    l10n.deleteInvoiceMessage(_invoice.customerName),
-                    style: GoogleFonts.inter(color: AppColors.textMuted),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: Text(
-                        l10n.cancel,
-                        style: GoogleFonts.inter(color: AppColors.textMuted),
+                    title: Text(
+                      l10n.deleteInvoiceTitle,
+                      style: GoogleFonts.montserrat(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: Text(
-                        l10n.delete,
-                        style: GoogleFonts.inter(
-                          color: AppColors.errorMuted,
-                          fontWeight: FontWeight.w700,
+                    content: Text(
+                      l10n.deleteInvoiceMessage(_invoice.customerName),
+                      style: GoogleFonts.inter(color: AppColors.textMuted),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(
+                          l10n.cancel,
+                          style: GoogleFonts.inter(color: AppColors.textMuted),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-              if (confirmed == true) {
-                await ReceiptStore.instance.deleteReceipt(_invoice.id);
-                if (!mounted) return;
-                navigator.pop();
-              }
-            },
-          ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(
+                          l10n.delete,
+                          style: GoogleFonts.inter(
+                            color: AppColors.errorMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await ReceiptStore.instance.deleteReceipt(_invoice.id);
+                  if (!mounted) return;
+                  navigator.pop();
+                }
+              },
+            ),
           const SizedBox(width: 8),
         ],
       ),
@@ -918,6 +1080,16 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
             Text(
               formatDate(context, _invoice.date),
               style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: widget.canChangeStatus
+                  ? GestureDetector(
+                      onTap: _toggleStatus,
+                      child: _buildDetailStatusPill(_invoice.status, l10n),
+                    )
+                  : _buildDetailStatusPill(_invoice.status, l10n),
             ),
             const SizedBox(height: 16),
             Container(
@@ -964,62 +1136,66 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${l10n.costLabel} \$${item.costPrice.toStringAsFixed(2)}',
-                            style: GoogleFonts.jetBrainsMono(
-                              color: AppColors.textMuted,
-                              fontSize: 12,
+                          if (widget.canViewFinancials) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              '${l10n.costLabel} \$${item.costPrice.toStringAsFixed(2)}',
+                              style: GoogleFonts.jetBrainsMono(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
                   ),
                   const Divider(color: Color(0x1AFFFFFF)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  if (widget.canViewFinancials) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
-                    children: [
-                      Text(
-                        l10n.costLabel,
-                        style: GoogleFonts.inter(
-                          color: AppColors.textMuted,
-                          fontWeight: FontWeight.w700,
+                      children: [
+                        Text(
+                          l10n.costLabel,
+                          style: GoogleFonts.inter(
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '\$${_invoiceCost.toStringAsFixed(2)}',
-                        style: GoogleFonts.montserrat(
-                          color: AppColors.textMuted,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                        Text(
+                          '\$${_invoiceCost.toStringAsFixed(2)}',
+                          style: GoogleFonts.montserrat(
+                            color: AppColors.textMuted,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        l10n.totalProfitLabel,
-                        style: GoogleFonts.inter(
-                          color: AppColors.textMuted,
-                          fontWeight: FontWeight.w700,
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.totalProfitLabel,
+                          style: GoogleFonts.inter(
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '\$${_invoice.totalProfit.toStringAsFixed(2)}',
-                        style: GoogleFonts.montserrat(
-                          color: AppColors.accent,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                        Text(
+                          '\$${_invoice.totalProfit.toStringAsFixed(2)}',
+                          style: GoogleFonts.montserrat(
+                            color: AppColors.accent,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1142,23 +1318,25 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 86,
-                              child: TextField(
-                                controller: costController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                style: GoogleFonts.inter(
-                                  color: AppColors.textPrimary,
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: l10n.cost,
+                            if (widget.canViewFinancials) ...[
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 86,
+                                child: TextField(
+                                  controller: costController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  decoration: InputDecoration(
+                                    labelText: l10n.cost,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       );
@@ -1185,11 +1363,12 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
                                     controllers[i]['price']!.text,
                                   ) ??
                                   current.unitPrice;
-                              final cost =
-                                  double.tryParse(
-                                    controllers[i]['cost']!.text,
-                                  ) ??
-                                  current.costPrice;
+                              final cost = widget.canViewFinancials
+                                  ? double.tryParse(
+                                          controllers[i]['cost']!.text,
+                                        ) ??
+                                        current.costPrice
+                                  : current.costPrice;
                               updated.add(
                                 InvoiceLine(
                                   name: current.name,
@@ -1260,24 +1439,6 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
         invoiceId: updatedReceipt.invoiceId,
       );
     });
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }
 

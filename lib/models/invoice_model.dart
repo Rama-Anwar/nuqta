@@ -61,10 +61,8 @@ class InvoiceModel {
     this.invoiceId,
   });
 
-  double get totalProfit => items.fold<double>(
-    0,
-    (sum, item) => sum + item.profit,
-  );
+  double get totalProfit =>
+      items.fold<double>(0, (sum, item) => sum + item.profit);
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
@@ -95,7 +93,7 @@ class InvoiceModel {
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
       status: InvoiceStatus.values.firstWhere(
         (e) => e.name == json['status'],
-        orElse: () => InvoiceStatus.paid,
+        orElse: () => InvoiceStatus.outstanding,
       ),
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => InvoiceLine.fromJson(e as Map<String, dynamic>))

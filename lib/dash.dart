@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'data/receipt_store.dart';
+import 'helper/get_current_user_profile.dart';
+import 'models/user_profile_model.dart';
 import 'nav.dart';
 
 class DashPage extends StatefulWidget {
@@ -12,11 +14,13 @@ class DashPage extends StatefulWidget {
 
 class _DashPageState extends State<DashPage> {
   late final Future<void> _loadFuture;
+  late final Future<UserProfile?> _profileFuture;
 
   @override
   void initState() {
     super.initState();
     _loadFuture = ReceiptStore.instance.ensureLoaded();
+    _profileFuture = getCurrentUserProfile();
   }
 
   @override
@@ -28,109 +32,166 @@ class _DashPageState extends State<DashPage> {
           children: [
             _TopBar(),
             Expanded(
-              child: FutureBuilder<void>(
-                future: _loadFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
+              child: FutureBuilder<UserProfile?>(
+                future: _profileFuture,
+                builder: (context, profileSnapshot) {
+                  if (profileSnapshot.connectionState != ConnectionState.done) {
                     return const Center(
-                      child: CircularProgressIndicator(color: Color(0xFFEE671C)),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFEE671C),
+                      ),
                     );
                   }
 
-                  return AnimatedBuilder(
-                    animation: ReceiptStore.instance,
-                    builder: (context, _) {
-                      final store = ReceiptStore.instance;
-                      final now = DateTime.now();
-                      final thisMonth = store.salesForMonth(now);
-                      final lastMonth = store.salesForMonth(DateTime(now.year, now.month - 1));
-                      final thisYear = store.salesForYear(now.year);
-                      final receiptCount = store.receiptsForMonth(now);
-                      final customerCount = store.uniqueCustomerCount();
-                      final trend = store.monthlyRevenueSeries(months: 6, referenceDate: now);
-                      final customers = store.topCustomers(limit: 4);
+                  if (profileSnapshot.data?.isOwner != true) {
+                    return const _AccessDeniedDashboard();
+                  }
 
-                      return LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isWide = constraints.maxWidth >= 1024;
+                  return FutureBuilder<void>(
+                    future: _loadFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFEE671C),
+                          ),
+                        );
+                      }
 
-                          final summaryRow = isWide
-                              ? Row(
+                      return AnimatedBuilder(
+                        animation: ReceiptStore.instance,
+                        builder: (context, _) {
+                          final store = ReceiptStore.instance;
+                          final now = DateTime.now();
+                          final thisMonth = store.salesForMonth(now);
+                          final lastMonth = store.salesForMonth(
+                            DateTime(now.year, now.month - 1),
+                          );
+                          final thisYear = store.salesForYear(now.year);
+                          final receiptCount = store.receiptsForMonth(now);
+                          final customerCount = store.uniqueCustomerCount();
+                          final trend = store.monthlyRevenueSeries(
+                            months: 6,
+                            referenceDate: now,
+                          );
+                          final customers = store.topCustomers(limit: 4);
+
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isWide = constraints.maxWidth >= 1024;
+
+                              final summaryRow = isWide
+                                  ? Row(
+                                      children: [
+                                        Expanded(
+                                          child: _SummaryCard(
+                                            title: 'Total Sales This Month',
+                                            value: _currency(thisMonth),
+                                            delta: _growthText(
+                                              thisMonth,
+                                              lastMonth,
+                                            ),
+                                            icon: Icons.trending_up_rounded,
+                                            iconBackground: const Color(
+                                              0xFF1E2723,
+                                            ),
+                                            iconColor: const Color(0xFF81B29A),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: _SummaryCard(
+                                            title: 'Total Sales This Year',
+                                            value: _currency(thisYear),
+                                            delta:
+                                                '$receiptCount saved receipts · $customerCount customers',
+                                            icon: Icons.calendar_today_rounded,
+                                            iconBackground: const Color(
+                                              0xFF313539,
+                                            ),
+                                            iconColor: const Color(0xFFBDC1C6),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Column(
+                                      children: [
+                                        _SummaryCard(
+                                          title: 'Total Sales This Month',
+                                          value: _currency(thisMonth),
+                                          delta: _growthText(
+                                            thisMonth,
+                                            lastMonth,
+                                          ),
+                                          icon: Icons.trending_up_rounded,
+                                          iconBackground: const Color(
+                                            0xFF1E2723,
+                                          ),
+                                          iconColor: const Color(0xFF81B29A),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _SummaryCard(
+                                          title: 'Total Sales This Year',
+                                          value: _currency(thisYear),
+                                          delta:
+                                              '$receiptCount saved receipts · $customerCount customers',
+                                          icon: Icons.calendar_today_rounded,
+                                          iconBackground: const Color(
+                                            0xFF313539,
+                                          ),
+                                          iconColor: const Color(0xFFBDC1C6),
+                                        ),
+                                      ],
+                                    );
+
+                              final contentRow = isWide
+                                  ? Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          flex: 8,
+                                          child: _RevenueTrendCard(
+                                            series: trend,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        SizedBox(
+                                          width: 380,
+                                          child: _TopCustomersCard(
+                                            customers: customers,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Column(
+                                      children: [
+                                        _RevenueTrendCard(series: trend),
+                                        const SizedBox(height: 16),
+                                        _TopCustomersCard(customers: customers),
+                                      ],
+                                    );
+
+                              return SingleChildScrollView(
+                                padding: EdgeInsets.fromLTRB(
+                                  16,
+                                  24,
+                                  16,
+                                  isWide ? 24 : 96,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
-                                    Expanded(
-                                      child: _SummaryCard(
-                                        title: 'Total Sales This Month',
-                                        value: _currency(thisMonth),
-                                        delta: _growthText(thisMonth, lastMonth),
-                                        icon: Icons.trending_up_rounded,
-                                        iconBackground: const Color(0xFF1E2723),
-                                        iconColor: const Color(0xFF81B29A),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: _SummaryCard(
-                                        title: 'Total Sales This Year',
-                                        value: _currency(thisYear),
-                                        delta: '$receiptCount saved receipts · $customerCount customers',
-                                        icon: Icons.calendar_today_rounded,
-                                        iconBackground: const Color(0xFF313539),
-                                        iconColor: const Color(0xFFBDC1C6),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  children: [
-                                    _SummaryCard(
-                                      title: 'Total Sales This Month',
-                                      value: _currency(thisMonth),
-                                      delta: _growthText(thisMonth, lastMonth),
-                                      icon: Icons.trending_up_rounded,
-                                      iconBackground: const Color(0xFF1E2723),
-                                      iconColor: const Color(0xFF81B29A),
-                                    ),
+                                    const _PageHeader(),
+                                    const SizedBox(height: 24),
+                                    summaryRow,
                                     const SizedBox(height: 16),
-                                    _SummaryCard(
-                                      title: 'Total Sales This Year',
-                                      value: _currency(thisYear),
-                                      delta: '$receiptCount saved receipts · $customerCount customers',
-                                      icon: Icons.calendar_today_rounded,
-                                      iconBackground: const Color(0xFF313539),
-                                      iconColor: const Color(0xFFBDC1C6),
-                                    ),
+                                    contentRow,
                                   ],
-                                );
-
-                          final contentRow = isWide
-                              ? Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(flex: 8, child: _RevenueTrendCard(series: trend)),
-                                    const SizedBox(width: 16),
-                                    SizedBox(width: 380, child: _TopCustomersCard(customers: customers)),
-                                  ],
-                                )
-                              : Column(
-                                  children: [
-                                    _RevenueTrendCard(series: trend),
-                                    const SizedBox(height: 16),
-                                    _TopCustomersCard(customers: customers),
-                                  ],
-                                );
-
-                          return SingleChildScrollView(
-                            padding: EdgeInsets.fromLTRB(16, 24, 16, isWide ? 24 : 96),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const _PageHeader(),
-                                const SizedBox(height: 24),
-                                summaryRow,
-                                const SizedBox(height: 16),
-                                contentRow,
-                              ],
-                            ),
+                                ),
+                              );
+                            },
                           );
                         },
                       );
@@ -148,7 +209,9 @@ class _DashPageState extends State<DashPage> {
 
   String _growthText(double currentMonth, double lastMonth) {
     if (lastMonth <= 0) {
-      return currentMonth <= 0 ? 'No saved receipts yet' : '+100% vs last month';
+      return currentMonth <= 0
+          ? 'No saved receipts yet'
+          : '+100% vs last month';
     }
 
     final delta = ((currentMonth - lastMonth) / lastMonth) * 100;
@@ -157,6 +220,44 @@ class _DashPageState extends State<DashPage> {
   }
 
   String _currency(double value) => '\$${value.toStringAsFixed(2)}';
+}
+
+class _AccessDeniedDashboard extends StatelessWidget {
+  const _AccessDeniedDashboard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.lock_outline_rounded,
+              color: Color(0xFFEE671C),
+              size: 42,
+            ),
+            SizedBox(height: 14),
+            Text(
+              'Not allowed',
+              style: TextStyle(
+                color: Color(0xFFDEE2E6),
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Dashboard financial analytics are available to owners only.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFFBDC1C6), fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _TopBar extends StatelessWidget {
@@ -177,7 +278,11 @@ class _TopBar extends StatelessWidget {
           children: [
             const Row(
               children: [
-                Icon(Icons.account_balance_wallet_rounded, color: Color(0xFFEE671C), size: 28),
+                Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: Color(0xFFEE671C),
+                  size: 28,
+                ),
                 SizedBox(width: 12),
                 Text(
                   'Invoice AI',
@@ -193,10 +298,30 @@ class _TopBar extends StatelessWidget {
             if (isDesktop)
               Row(
                 children: const [
-                  _DesktopNavItem(icon: Icons.dashboard_rounded, label: 'Dashboard', active: true, route: AppRoutes.dash),
-                  _DesktopNavItem(icon: Icons.receipt_long_rounded, label: 'Receipts', active: false, route: AppRoutes.receipts),
-                  _DesktopNavItem(icon: Icons.description_rounded, label: 'Invoices', active: false, route: AppRoutes.invoices),
-                  _DesktopNavItem(icon: Icons.person_rounded, label: 'Profile', active: false, route: AppRoutes.profile),
+                  _DesktopNavItem(
+                    icon: Icons.dashboard_rounded,
+                    label: 'Dashboard',
+                    active: true,
+                    route: AppRoutes.dash,
+                  ),
+                  _DesktopNavItem(
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Receipts',
+                    active: false,
+                    route: AppRoutes.receipts,
+                  ),
+                  _DesktopNavItem(
+                    icon: Icons.description_rounded,
+                    label: 'Invoices',
+                    active: false,
+                    route: AppRoutes.invoices,
+                  ),
+                  _DesktopNavItem(
+                    icon: Icons.person_rounded,
+                    label: 'Profile',
+                    active: false,
+                    route: AppRoutes.profile,
+                  ),
                 ],
               )
             else
@@ -222,7 +347,12 @@ class _DesktopNavItem extends StatelessWidget {
   final bool active;
   final String route;
 
-  const _DesktopNavItem({required this.icon, required this.label, required this.active, required this.route});
+  const _DesktopNavItem({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.route,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -232,7 +362,12 @@ class _DesktopNavItem extends StatelessWidget {
       child: TextButton.icon(
         onPressed: () {
           if (active) return;
-          Navigator.of(context).pushReplacementNamed(route);
+          final shell = AppTabScope.maybeOf(context);
+          if (shell?.switchToRoute != null) {
+            shell!.switchToRoute!(route);
+          } else {
+            Navigator.of(context).pushReplacementNamed(route);
+          }
         },
         style: TextButton.styleFrom(
           foregroundColor: color,
@@ -305,11 +440,7 @@ class _PageHeader extends StatelessWidget {
         SizedBox(height: 8),
         Text(
           'Financial performance summary',
-          style: TextStyle(
-            color: Color(0xFFBDC1C6),
-            fontSize: 16,
-            height: 1.4,
-          ),
+          style: TextStyle(color: Color(0xFFBDC1C6), fontSize: 16, height: 1.4),
         ),
       ],
     );
@@ -402,7 +533,10 @@ class _RevenueTrendCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxAmount = series.fold<double>(0, (maxValue, point) => point.amount > maxValue ? point.amount : maxValue);
+    final maxAmount = series.fold<double>(
+      0,
+      (maxValue, point) => point.amount > maxValue ? point.amount : maxValue,
+    );
     final chartMax = maxAmount <= 0 ? 1.0 : maxAmount;
     final hasData = maxAmount > 0;
 
@@ -447,10 +581,38 @@ class _RevenueTrendCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(_axisLabel(chartMax), style: const TextStyle(color: Color(0xFFBDC1C6), fontSize: 12, fontFamily: 'monospace')),
-                      Text(_axisLabel(chartMax * 0.66), style: const TextStyle(color: Color(0xFFBDC1C6), fontSize: 12, fontFamily: 'monospace')),
-                      Text(_axisLabel(chartMax * 0.33), style: const TextStyle(color: Color(0xFFBDC1C6), fontSize: 12, fontFamily: 'monospace')),
-                      const Text('0', style: TextStyle(color: Color(0xFFBDC1C6), fontSize: 12, fontFamily: 'monospace')),
+                      Text(
+                        _axisLabel(chartMax),
+                        style: const TextStyle(
+                          color: Color(0xFFBDC1C6),
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      Text(
+                        _axisLabel(chartMax * 0.66),
+                        style: const TextStyle(
+                          color: Color(0xFFBDC1C6),
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      Text(
+                        _axisLabel(chartMax * 0.33),
+                        style: const TextStyle(
+                          color: Color(0xFFBDC1C6),
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      const Text(
+                        '0',
+                        style: TextStyle(
+                          color: Color(0xFFBDC1C6),
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -466,13 +628,19 @@ class _RevenueTrendCard extends StatelessWidget {
                             children: List.generate(series.length, (index) {
                               final point = series[index];
                               final isCurrentMonth = index == series.length - 1;
-                              final factor = point.amount <= 0 ? 0.06 : (point.amount / chartMax).clamp(0.06, 1.0);
+                              final factor = point.amount <= 0
+                                  ? 0.06
+                                  : (point.amount / chartMax).clamp(0.06, 1.0);
 
                               return Expanded(
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                  ),
                                   child: _ChartBar(
-                                    fill: isCurrentMonth ? const Color(0xFFEE671C) : const Color(0xFF313539),
+                                    fill: isCurrentMonth
+                                        ? const Color(0xFFEE671C)
+                                        : const Color(0xFF313539),
                                     factor: factor,
                                     value: _currency(point.amount),
                                     active: isCurrentMonth,
@@ -494,8 +662,12 @@ class _RevenueTrendCard extends StatelessWidget {
                               point.label,
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: isCurrentMonth ? const Color(0xFFEE671C) : const Color(0xFFBDC1C6),
-                                fontWeight: isCurrentMonth ? FontWeight.w600 : FontWeight.w400,
+                                color: isCurrentMonth
+                                    ? const Color(0xFFEE671C)
+                                    : const Color(0xFFBDC1C6),
+                                fontWeight: isCurrentMonth
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                                 fontSize: 14,
                               ),
                             ),
@@ -598,7 +770,12 @@ class _ChartBar extends StatelessWidget {
                 topRight: Radius.circular(8),
               ),
               boxShadow: active
-                  ? const [BoxShadow(color: Color.fromRGBO(211, 84, 0, 0.2), blurRadius: 20)]
+                  ? const [
+                      BoxShadow(
+                        color: Color.fromRGBO(211, 84, 0, 0.2),
+                        blurRadius: 20,
+                      ),
+                    ]
                   : null,
             ),
           ),
@@ -611,13 +788,19 @@ class _ChartBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: const Color(0xFF0F1417),
-                border: Border.all(color: active ? const Color(0xFFEE671C) : const Color(0xFF3E444A)),
+                border: Border.all(
+                  color: active
+                      ? const Color(0xFFEE671C)
+                      : const Color(0xFF3E444A),
+                ),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 value,
                 style: TextStyle(
-                  color: active ? const Color(0xFFEE671C) : const Color(0xFFBDC1C6),
+                  color: active
+                      ? const Color(0xFFEE671C)
+                      : const Color(0xFFBDC1C6),
                   fontSize: 12,
                   fontFamily: 'monospace',
                 ),
@@ -737,7 +920,10 @@ class _TopCustomersCard extends StatelessWidget {
                 child: InkWell(
                   onTap: () {},
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -749,7 +935,9 @@ class _TopCustomersCard extends StatelessWidget {
                                 height: 32,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF313539),
-                                  border: Border.all(color: const Color(0xFF3E444A)),
+                                  border: Border.all(
+                                    color: const Color(0xFF3E444A),
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 alignment: Alignment.center,
@@ -812,13 +1000,19 @@ class _TopCustomersCard extends StatelessWidget {
   String _spentLabel(double value) => '\$${value.toStringAsFixed(0)}';
 
   String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
     if (parts.isEmpty) {
       return '--';
     }
     if (parts.length == 1) {
       final word = parts.first;
-      return word.length <= 2 ? word.toUpperCase() : word.substring(0, 2).toUpperCase();
+      return word.length <= 2
+          ? word.toUpperCase()
+          : word.substring(0, 2).toUpperCase();
     }
     final first = parts.first[0];
     final last = parts.last[0];

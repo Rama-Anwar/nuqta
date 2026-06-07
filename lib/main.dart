@@ -4,16 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:invoice_ai/firebase_options.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
-import 'package:invoice_ai/profile.dart';
 import 'package:invoice_ai/providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'login.dart';
-import 'dash.dart';
-import 'invoices.dart';
 import 'nav.dart';
-import 'recive.dart';
 import 'splash_screen.dart';
+import 'tab_shell.dart';
 import 'technical_support.dart';
 
 Future<void> main() async {
@@ -35,7 +32,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       locale: localeProvider.locale,
 
-
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -44,8 +40,6 @@ class MyApp extends StatelessWidget {
       ],
 
       supportedLocales: const [Locale('en'), Locale('ar')],
-
-
 
       title: 'Invoice AI',
       debugShowCheckedModeBanner: false,
@@ -59,10 +53,13 @@ class MyApp extends StatelessWidget {
         ),
       ),
       routes: {
-        AppRoutes.dash: (_) => const DashPage(),
-        AppRoutes.receipts: (_) => const ReceivePage(),
-        AppRoutes.invoices: (_) => const InvoicesPage(),
-        AppRoutes.profile: (_) => const ProfileScreen(),
+        AppRoutes.dash: (_) => const AppTabShell(initialRoute: AppRoutes.dash),
+        AppRoutes.receipts: (_) =>
+            const AppTabShell(initialRoute: AppRoutes.receipts),
+        AppRoutes.invoices: (_) =>
+            const AppTabShell(initialRoute: AppRoutes.invoices),
+        AppRoutes.profile: (_) =>
+            const AppTabShell(initialRoute: AppRoutes.profile),
         AppRoutes.support: (_) => const TechnicalSupportPage(),
       },
       home: SplashScreen(
@@ -78,7 +75,7 @@ class MyApp extends StatelessWidget {
     ]);
 
     return FirebaseAuth.instance.currentUser != null
-        ? const DashPage()
+        ? const AppTabShell(initialRoute: AppRoutes.dash)
         : const LoginPage();
   }
 }
