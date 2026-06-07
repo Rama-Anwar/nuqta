@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'nav.dart';
+import 'widgets/pending_invoices_badge.dart';
 
 class AppColors {
   static const Color primaryBg = Color(0xFF1A1D20);
@@ -113,6 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.primaryBg,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: AppColors.primaryBg,
         elevation: 0,
         titleSpacing: 16,
@@ -124,6 +126,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             fontSize: 20,
           ),
         ),
+        actions: [
+          PendingInvoicesBadgeButton(
+            onInvoiceSelected: (invoice) {
+              AppTabScope.maybeOf(context)?.openPendingInvoice?.call(invoice);
+            },
+          ),
+        ],
 
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),

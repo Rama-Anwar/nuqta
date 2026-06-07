@@ -69,7 +69,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get logout => 'تسجيل الخروج';
 
   @override
-  String get inventorySheetUrlInvalid => 'رابط جدول المخزون غير موجود أو غير صالح.';
+  String get inventorySheetUrlInvalid =>
+      'رابط جدول المخزون غير موجود أو غير صالح.';
 
   @override
   String get unableToOpenInventorySheet => 'تعذر فتح جدول المخزون.';
@@ -216,7 +217,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dec => 'ديسمبر';
 
   @override
-  String get newIntakeReceipt => 'إدخال فاتورة / سند قبض';
+  String get newIntakeReceipt => 'إيصال جديد';
 
   @override
   String get draft => 'مسودة';
@@ -307,7 +308,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get receiptSavedDashboardUpdated => 'تم حفظ السند وتحديث لوحة التحكم.';
 
   @override
-  String get invoiceApprovedNotificationFailed => 'تم اعتماد الفاتورة ولكن فشل إرسال إشعار الإنهاء.';
+  String get invoiceApprovedNotificationFailed =>
+      'تم اعتماد الفاتورة ولكن فشل إرسال إشعار الإنهاء.';
 
   @override
   String failedSaveApproveInvoice(Object error) {
@@ -323,7 +325,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get needHelp => 'بحاجة إلى مساعدة؟';
 
   @override
-  String get supportIntro => 'أرسل تفاصيل المشكلة وسيقوم فريق الدعم بالتواصل معك.';
+  String get supportIntro =>
+      'أرسل تفاصيل المشكلة وسيقوم فريق الدعم بالتواصل معك.';
 
   @override
   String get issueType => 'نوع المشكلة';

@@ -9,8 +9,25 @@ import 'services/n8n_webhook_service.dart';
 import 'services/pending_invoices_service.dart';
 import 'widgets/pending_invoices_badge.dart';
 
+class ReceivePageController extends ChangeNotifier {
+  PendingInvoice? _pendingInvoice;
+
+  void loadPendingInvoice(PendingInvoice invoice) {
+    _pendingInvoice = invoice;
+    notifyListeners();
+  }
+
+  PendingInvoice? takePendingInvoice() {
+    final invoice = _pendingInvoice;
+    _pendingInvoice = null;
+    return invoice;
+  }
+}
+
 class ReceivePage extends StatefulWidget {
-  const ReceivePage({super.key});
+  final ReceivePageController? controller;
+
+  const ReceivePage({super.key, this.controller});
 
   @override
   State<ReceivePage> createState() => _ReceivePageState();
@@ -36,7 +53,17 @@ class _ReceivePageState extends State<ReceivePage> {
   bool _isSubmitting = false;
 
   @override
+  void initState() {
+    super.initState();
+    widget.controller?.addListener(_handleControllerLoad);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleControllerLoad();
+    });
+  }
+
+  @override
   void dispose() {
+    widget.controller?.removeListener(_handleControllerLoad);
     _customerController.dispose();
     _invoiceController.dispose();
     _dateController.dispose();
@@ -45,6 +72,12 @@ class _ReceivePageState extends State<ReceivePage> {
     _unitPriceController.dispose();
     _costPriceController.dispose();
     super.dispose();
+  }
+
+  void _handleControllerLoad() {
+    final invoice = widget.controller?.takePendingInvoice();
+    if (invoice == null || !mounted) return;
+    _loadFromPendingInvoice(invoice);
   }
 
   double get _subtotal =>
@@ -123,6 +156,9 @@ class _ReceivePageState extends State<ReceivePage> {
 
       _customerController.text = inv.customerName;
       _invoiceController.text = inv.invoiceId;
+      if (inv.date != null) {
+        _dateController.text = inv.date!.toIso8601String().split('T').first;
+      }
       _items
         ..clear()
         ..addAll(
@@ -200,12 +236,25 @@ class _ReceivePageState extends State<ReceivePage> {
         );
 
         await ReceiptStore.instance.addReceipt(receipt);
-        await PendingInvoicesService.instance.approveInvoice(
-          docId: docId,
-          customerName: customerName,
-          invoiceId: invoiceId,
-          items: editedItems,
-        );
+
+        try {
+          await PendingInvoicesService.instance.approveInvoice(
+            docId: docId,
+            customerName: customerName,
+            invoiceId: invoiceId,
+            items: editedItems,
+          );
+        } catch (approvalError) {
+          try {
+            await ReceiptStore.instance.deleteReceipt(receipt.id);
+          } catch (rollbackError) {
+            debugPrint(
+              'Receipt rollback failed after approveInvoice error: '
+              '$rollbackError',
+            );
+          }
+          rethrow;
+        }
 
         try {
           final organizationId = await PendingInvoicesService.instance
@@ -318,6 +367,11 @@ class _ReceivePageState extends State<ReceivePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final pendingInvoiceIsLoaded = _activePendingDocId != null;
+    final submitLabel = pendingInvoiceIsLoaded
+        ? l10n.approveInvoice
+        : 'SAVE RECEIPT';
+
     return Scaffold(
       backgroundColor: AppPalette.backgroundScaffold,
       body: SafeArea(
@@ -341,49 +395,62 @@ class _ReceivePageState extends State<ReceivePage> {
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 1280),
-                        child: isDesktop
-                            ? _DesktopLayout(
-                                customerController: _customerController,
-                                costPriceController: _costPriceController,
-                                invoiceController: _invoiceController,
-                                dateController: _dateController,
-                                itemController: _itemController,
-                                quantityController: _quantityController,
-                                unitPriceController: _unitPriceController,
-                                items: _items,
-                                subtotal: _subtotal,
-                                tax: _tax,
-                                total: _total,
-                                onAddItem: () => _addItem(l10n),
-                                onRemoveItem: _removeItem,
-                                onNameChanged: _updateItemName,
-                                onQtyChanged: _updateItemQuantity,
-                                onPriceChanged: _updateItemPrice,
-                                onCostChanged: _updateItemCost,
-                                onSubmit: () => _submit(l10n),
-                                isSubmitting: _isSubmitting,
-                              )
-                            : _MobileLayout(
-                                costPriceController: _costPriceController,
-                                customerController: _customerController,
-                                invoiceController: _invoiceController,
-                                dateController: _dateController,
-                                itemController: _itemController,
-                                quantityController: _quantityController,
-                                unitPriceController: _unitPriceController,
-                                items: _items,
-                                subtotal: _subtotal,
-                                tax: _tax,
-                                total: _total,
-                                onAddItem: () => _addItem(l10n),
-                                onRemoveItem: _removeItem,
-                                onNameChanged: _updateItemName,
-                                onQtyChanged: _updateItemQuantity,
-                                onPriceChanged: _updateItemPrice,
-                                onCostChanged: _updateItemCost,
-                                onSubmit: () => _submit(l10n),
-                                isSubmitting: _isSubmitting,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (pendingInvoiceIsLoaded) ...[
+                              _PendingInvoiceBanner(
+                                customerName: _customerController.text.trim(),
+                                invoiceId: _invoiceController.text.trim(),
                               ),
+                              const SizedBox(height: 16),
+                            ],
+                            isDesktop
+                                ? _DesktopLayout(
+                                    customerController: _customerController,
+                                    costPriceController: _costPriceController,
+                                    invoiceController: _invoiceController,
+                                    dateController: _dateController,
+                                    itemController: _itemController,
+                                    quantityController: _quantityController,
+                                    unitPriceController: _unitPriceController,
+                                    items: _items,
+                                    subtotal: _subtotal,
+                                    tax: _tax,
+                                    total: _total,
+                                    onAddItem: () => _addItem(l10n),
+                                    onRemoveItem: _removeItem,
+                                    onNameChanged: _updateItemName,
+                                    onQtyChanged: _updateItemQuantity,
+                                    onPriceChanged: _updateItemPrice,
+                                    onCostChanged: _updateItemCost,
+                                    onSubmit: () => _submit(l10n),
+                                    isSubmitting: _isSubmitting,
+                                    submitLabel: submitLabel,
+                                  )
+                                : _MobileLayout(
+                                    costPriceController: _costPriceController,
+                                    customerController: _customerController,
+                                    invoiceController: _invoiceController,
+                                    dateController: _dateController,
+                                    itemController: _itemController,
+                                    quantityController: _quantityController,
+                                    unitPriceController: _unitPriceController,
+                                    items: _items,
+                                    subtotal: _subtotal,
+                                    tax: _tax,
+                                    total: _total,
+                                    onAddItem: () => _addItem(l10n),
+                                    onRemoveItem: _removeItem,
+                                    onNameChanged: _updateItemName,
+                                    onQtyChanged: _updateItemQuantity,
+                                    onPriceChanged: _updateItemPrice,
+                                    onCostChanged: _updateItemCost,
+                                    onSubmit: () => _submit(l10n),
+                                    isSubmitting: _isSubmitting,
+                                  ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -405,6 +472,7 @@ class _ReceivePageState extends State<ReceivePage> {
                 total: _total,
                 onSubmit: () => _submit(l10n),
                 isSubmitting: _isSubmitting,
+                submitLabel: submitLabel,
               ),
               const AppBottomNavBar(activeIndex: 1),
             ],
@@ -461,6 +529,81 @@ class _TopAppBar extends StatelessWidget {
   }
 }
 
+class _PendingInvoiceBanner extends StatelessWidget {
+  final String customerName;
+  final String invoiceId;
+
+  const _PendingInvoiceBanner({
+    required this.customerName,
+    required this.invoiceId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final details = <String>[
+      if (customerName.isNotEmpty) customerName,
+      if (invoiceId.isNotEmpty) invoiceId,
+    ].join(' - ');
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppPalette.primaryContainer.withValues(alpha: 0.12),
+        border: Border.all(
+          color: AppPalette.primaryContainer.withValues(alpha: 0.35),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppPalette.primaryContainer.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.inbox_rounded,
+              color: AppPalette.primaryContainer,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Loaded from Waiting List',
+                  style: TextStyle(
+                    color: AppPalette.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (details.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    details,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppPalette.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DesktopLayout extends StatelessWidget {
   final TextEditingController customerController;
   final TextEditingController costPriceController;
@@ -481,6 +624,7 @@ class _DesktopLayout extends StatelessWidget {
   final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
   final bool isSubmitting;
+  final String submitLabel;
 
   const _DesktopLayout({
     required this.customerController,
@@ -502,6 +646,7 @@ class _DesktopLayout extends StatelessWidget {
     required this.onCostChanged,
     required this.onSubmit,
     required this.isSubmitting,
+    required this.submitLabel,
   });
 
   @override
@@ -631,6 +776,7 @@ class _DesktopLayout extends StatelessWidget {
             onCostChanged: onCostChanged,
             onSubmit: onSubmit,
             isSubmitting: isSubmitting,
+            submitLabel: submitLabel,
           ),
         ),
       ],
@@ -821,6 +967,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
   final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
   final bool isSubmitting;
+  final String submitLabel;
 
   const _ItemsPanelDesktop({
     required this.items,
@@ -834,6 +981,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
     required this.onCostChanged,
     required this.onSubmit,
     required this.isSubmitting,
+    required this.submitLabel,
   });
 
   @override
@@ -921,6 +1069,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
             ),
             onSubmit: onSubmit,
             isSubmitting: isSubmitting,
+            submitLabel: submitLabel,
           ),
         ],
       ),
@@ -1002,6 +1151,7 @@ class _DesktopTotalsSummary extends StatelessWidget {
   final double totalCost;
   final VoidCallback onSubmit;
   final bool isSubmitting;
+  final String submitLabel;
 
   const _DesktopTotalsSummary({
     required this.subtotal,
@@ -1010,6 +1160,7 @@ class _DesktopTotalsSummary extends StatelessWidget {
     required this.totalCost,
     required this.onSubmit,
     required this.isSubmitting,
+    required this.submitLabel,
   });
 
   @override
@@ -1063,7 +1214,7 @@ class _DesktopTotalsSummary extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          l10n.approveInvoice,
+                          submitLabel,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1,
@@ -1104,11 +1255,13 @@ class _MobileActionBar extends StatelessWidget {
   final double total;
   final VoidCallback onSubmit;
   final bool isSubmitting;
+  final String submitLabel;
 
   const _MobileActionBar({
     required this.total,
     required this.onSubmit,
     required this.isSubmitting,
+    required this.submitLabel,
   });
 
   @override
@@ -1176,7 +1329,7 @@ class _MobileActionBar extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            l10n.approveInvoice,
+                            submitLabel,
 
                             style: TextStyle(
                               fontWeight: FontWeight.w700,

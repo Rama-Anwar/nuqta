@@ -30,11 +30,18 @@ class PendingInvoicesBadgeButton extends StatelessWidget {
         final count = invoices.length;
         final hasError = snapshot.hasError;
 
-        return GestureDetector(
-          onTap: hasError
-              ? () => _showLoadError(context)
-              : () => _openSheet(context, invoices),
-          child: _BadgeIcon(count: count, hasError: hasError),
+        return Tooltip(
+          message: 'Pending invoices',
+          child: Semantics(
+            label: 'Pending invoices',
+            button: true,
+            child: GestureDetector(
+              onTap: hasError
+                  ? () => _showLoadError(context)
+                  : () => _openSheet(context, invoices),
+              child: _BadgeIcon(count: count, hasError: hasError),
+            ),
+          ),
         );
       },
     );
@@ -54,13 +61,22 @@ class PendingInvoicesBadgeButton extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
       isScrollControlled: true,
-      builder: (_) => _PendingInvoicesSheet(
-        invoices: invoices,
-        onSelected: (inv) {
-          Navigator.of(context).pop();
-          onInvoiceSelected(inv);
-        },
+      builder: (sheetContext) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(sheetContext).pop(),
+        child: GestureDetector(
+          onTap: () {},
+          child: _PendingInvoicesSheet(
+            invoices: invoices,
+            onSelected: (inv) {
+              Navigator.of(sheetContext).pop();
+              onInvoiceSelected(inv);
+            },
+          ),
+        ),
       ),
     );
   }

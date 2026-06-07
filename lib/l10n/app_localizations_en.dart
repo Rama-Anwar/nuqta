@@ -69,10 +69,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logout => 'LOGOUT';
 
   @override
-  String get inventorySheetUrlInvalid => 'Inventory sheet URL is missing or invalid.';
+  String get inventorySheetUrlInvalid =>
+      'Inventory sheet URL is missing or invalid.';
 
   @override
-  String get unableToOpenInventorySheet => 'Unable to open the inventory sheet.';
+  String get unableToOpenInventorySheet =>
+      'Unable to open the inventory sheet.';
 
   @override
   String billingDate(Object date) {
@@ -216,7 +218,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dec => 'DEC';
 
   @override
-  String get newIntakeReceipt => 'New Intake / Receipt';
+  String get newIntakeReceipt => 'New Receipt';
 
   @override
   String get draft => 'Draft';
@@ -304,10 +306,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invoiceApprovedProcessed => 'Invoice approved & processed!';
 
   @override
-  String get receiptSavedDashboardUpdated => 'Receipt saved and dashboard updated.';
+  String get receiptSavedDashboardUpdated =>
+      'Receipt saved and dashboard updated.';
 
   @override
-  String get invoiceApprovedNotificationFailed => 'Invoice approved, but finalization notification failed.';
+  String get invoiceApprovedNotificationFailed =>
+      'Invoice approved, but finalization notification failed.';
 
   @override
   String failedSaveApproveInvoice(Object error) {
@@ -323,7 +327,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get needHelp => 'Need help?';
 
   @override
-  String get supportIntro => 'Send us the issue details and the support team will follow up.';
+  String get supportIntro =>
+      'Send us the issue details and the support team will follow up.';
 
   @override
   String get issueType => 'ISSUE TYPE';

@@ -8,6 +8,7 @@ import 'models/user_profile_model.dart';
 import 'nav.dart';
 import 'profile.dart';
 import 'recive.dart';
+import 'services/pending_invoices_service.dart';
 
 class AppTabShell extends StatefulWidget {
   final String initialRoute;
@@ -23,22 +24,34 @@ class _AppTabShellState extends State<AppTabShell> {
   UserProfile? _profile;
   bool _isLoadingProfile = true;
   int _currentPosition = 0;
+  late final ReceivePageController _receivePageController;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _receivePageController = ReceivePageController();
     _loadProfile();
   }
 
   @override
   void dispose() {
+    _receivePageController.dispose();
     _pageController.dispose();
     super.dispose();
   }
 
   Future<void> _loadProfile() async {
-    final profile = await getCurrentUserProfile();
+    UserProfile? profile;
+    var profileLoadFailed = false;
+
+    try {
+      profile = await getCurrentUserProfile();
+    } catch (error) {
+      profileLoadFailed = true;
+      debugPrint('Unable to load tab profile: $error');
+    }
+
     if (!mounted) return;
 
     final entries = _entriesFor(profile);
@@ -52,6 +65,16 @@ class _AppTabShellState extends State<AppTabShell> {
       _currentPosition = initialPosition;
       _isLoadingProfile = false;
     });
+
+    if (profileLoadFailed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to load account details. Limited access shown.',
+          ),
+        ),
+      );
+    }
   }
 
   List<AppNavEntry> _entriesFor(UserProfile? profile) {
@@ -95,6 +118,11 @@ class _AppTabShellState extends State<AppTabShell> {
     );
   }
 
+  void _openPendingInvoice(PendingInvoice invoice) {
+    _switchToRoute(AppRoutes.receipts);
+    _receivePageController.loadPendingInvoice(invoice);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoadingProfile) {
@@ -112,6 +140,7 @@ class _AppTabShellState extends State<AppTabShell> {
 
     return AppTabScope(
       switchToRoute: _switchToRoute,
+      openPendingInvoice: _openPendingInvoice,
       child: Scaffold(
         backgroundColor: const Color(0xFF1A1D20),
         body: PageView(
@@ -134,10 +163,10 @@ class _AppTabShellState extends State<AppTabShell> {
     return _KeepAliveTab(
       child: switch (entry.route) {
         AppRoutes.dash => const DashPage(),
-        AppRoutes.receipts => const ReceivePage(),
+        AppRoutes.receipts => ReceivePage(controller: _receivePageController),
         AppRoutes.invoices => const InvoicesPage(),
         AppRoutes.profile => const ProfileScreen(),
-        _ => const ReceivePage(),
+        _ => ReceivePage(controller: _receivePageController),
       },
     );
   }

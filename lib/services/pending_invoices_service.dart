@@ -8,6 +8,7 @@ class PendingInvoice {
   final String customerName;
   final String invoiceId;
   final String status;
+  final DateTime? date;
   final List<PendingInvoiceItem> items;
 
   const PendingInvoice({
@@ -15,6 +16,7 @@ class PendingInvoice {
     required this.customerName,
     required this.invoiceId,
     required this.status,
+    this.date,
     required this.items,
   });
 
@@ -40,8 +42,20 @@ class PendingInvoice {
       customerName: (data['customer_name'] as String?) ?? 'Unknown',
       invoiceId: invoiceIdStr,
       status: (data['status'] as String?) ?? 'pending_review',
+      date: _parseDate(
+        data['date'] ??
+            data['invoice_date'] ??
+            data['created_at'] ??
+            data['createdAt'],
+      ),
       items: items,
     );
+  }
+
+  static DateTime? _parseDate(dynamic raw) {
+    if (raw is Timestamp) return raw.toDate();
+    if (raw is String) return DateTime.tryParse(raw);
+    return null;
   }
 }
 

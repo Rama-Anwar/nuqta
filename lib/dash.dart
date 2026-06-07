@@ -4,6 +4,7 @@ import 'data/receipt_store.dart';
 import 'helper/get_current_user_profile.dart';
 import 'models/user_profile_model.dart';
 import 'nav.dart';
+import 'widgets/pending_invoices_badge.dart';
 
 class DashPage extends StatefulWidget {
   const DashPage({super.key});
@@ -326,14 +327,21 @@ class _TopBar extends StatelessWidget {
               )
             else
               const SizedBox.shrink(),
-            if (isDesktop)
-              const Row(
-                children: [
-                  _IconAction(icon: Icons.search_rounded),
-                  SizedBox(width: 12),
-                  _IconAction(icon: Icons.notifications_rounded, showDot: true),
+            Row(
+              children: [
+                if (isDesktop) ...[
+                  const _IconAction(icon: Icons.search_rounded),
+                  const SizedBox(width: 12),
                 ],
-              ),
+                PendingInvoicesBadgeButton(
+                  onInvoiceSelected: (invoice) {
+                    AppTabScope.maybeOf(
+                      context,
+                    )?.openPendingInvoice?.call(invoice);
+                  },
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -383,9 +391,8 @@ class _DesktopNavItem extends StatelessWidget {
 
 class _IconAction extends StatelessWidget {
   final IconData icon;
-  final bool showDot;
 
-  const _IconAction({required this.icon, this.showDot = false});
+  const _IconAction({required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -397,25 +404,7 @@ class _IconAction extends StatelessWidget {
         border: Border.all(color: const Color(0xFF3E444A)),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Icon(icon, color: const Color(0xFFDEE2E6), size: 20),
-          if (showDot)
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEE671C),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-        ],
-      ),
+      child: Icon(icon, color: const Color(0xFFDEE2E6), size: 20),
     );
   }
 }

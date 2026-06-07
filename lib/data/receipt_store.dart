@@ -7,23 +7,15 @@ class ReceiptStore extends ChangeNotifier {
 
   static final ReceiptStore instance = ReceiptStore._();
 
-  // Firestore collection reference
-  static CollectionReference<Map<String, dynamic>> get _col {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-
-    return FirebaseFirestore.instance
-        .collection('users_receipts')
-        .doc(uid)
-        .collection('receipts');
-  }
-
   final List<ReceiptRecord> _receipts = <ReceiptRecord>[];
   bool _loaded = false;
+  String? _loadedOrganizationId;
 
   List<ReceiptRecord> get receipts => List.unmodifiable(_receipts);
 
-  Stream<List<ReceiptRecord>> receiptsStream() {
-    return _col
+  Stream<List<ReceiptRecord>> receiptsStream() async* {
+    final context = await _receiptContext();
+    yield* context.collection
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
@@ -37,9 +29,19 @@ class ReceiptStore extends ChangeNotifier {
 
   /// Loads all receipts from Firestore (once per app session).
   Future<void> ensureLoaded() async {
-    if (_loaded) return;
+    await _ensureLoadedForCurrentOrganization();
+  }
 
-    final snapshot = await _col.orderBy('createdAt', descending: true).get();
+  Future<_ReceiptCollectionContext>
+  _ensureLoadedForCurrentOrganization() async {
+    final context = await _receiptContext();
+    if (_loaded && _loadedOrganizationId == context.organizationId) {
+      return context;
+    }
+
+    final snapshot = await context.collection
+        .orderBy('createdAt', descending: true)
+        .get();
 
     _receipts
       ..clear()
@@ -50,17 +52,27 @@ class ReceiptStore extends ChangeNotifier {
       );
 
     _loaded = true;
+    _loadedOrganizationId = context.organizationId;
     notifyListeners();
+    return context;
   }
 
   /// Saves a new receipt to Firestore and updates the local cache.
   Future<void> addReceipt(ReceiptRecord receipt) async {
-    await ensureLoaded();
+    final context = await _ensureLoadedForCurrentOrganization();
 
     final assigned = _ensureSequentialInvoiceId(receipt);
 
     // Use the receipt's id as the Firestore document id so they stay in sync.
-    await _col.doc(assigned.id).set(assigned.toJson());
+    await context.collection
+        .doc(assigned.id)
+        .set(
+          assigned.toJson(
+            organizationId: context.organizationId,
+            createdBy: context.userUid,
+            createdByEmail: context.userEmail,
+          ),
+        );
 
     _receipts.insert(0, assigned);
     notifyListeners();
@@ -68,14 +80,22 @@ class ReceiptStore extends ChangeNotifier {
 
   /// Updates an existing receipt in Firestore and in the local cache.
   Future<void> updateReceipt(ReceiptRecord updated) async {
-    await ensureLoaded();
+    final context = await _ensureLoadedForCurrentOrganization();
 
     final idx = _receipts.indexWhere((r) => r.id == updated.id);
     if (idx == -1) return;
 
     final assigned = _ensureSequentialInvoiceId(updated, excludeId: updated.id);
 
-    await _col.doc(assigned.id).set(assigned.toJson());
+    await context.collection
+        .doc(assigned.id)
+        .set(
+          assigned.toJson(
+            organizationId: assigned.organizationId ?? context.organizationId,
+            createdBy: assigned.createdBy ?? assigned.userUid,
+            createdByEmail: assigned.createdByEmail ?? context.userEmail,
+          ),
+        );
 
     _receipts[idx] = assigned;
     notifyListeners();
@@ -83,10 +103,42 @@ class ReceiptStore extends ChangeNotifier {
 
   /// Deletes a receipt from Firestore and removes it from the local cache.
   Future<void> deleteReceipt(String id) async {
-    await ensureLoaded();
-    await _col.doc(id).delete();
+    final context = await _ensureLoadedForCurrentOrganization();
+    await context.collection.doc(id).delete();
     _receipts.removeWhere((r) => r.id == id);
     notifyListeners();
+  }
+
+  /// Organization-scoped receipt ledger:
+  /// organizations/{organization_id}/receipts/{receiptId}
+  Future<_ReceiptCollectionContext> _receiptContext() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw StateError('A signed-in user is required to access receipts.');
+    }
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    final userData = userDoc.data();
+    final organizationId = userData?['organization_id'];
+
+    if (organizationId is! String || organizationId.trim().isEmpty) {
+      throw StateError('A valid organization_id is required for receipts.');
+    }
+
+    final normalizedOrganizationId = organizationId.trim();
+    return _ReceiptCollectionContext(
+      organizationId: normalizedOrganizationId,
+      userUid: uid,
+      userEmail: user?.email?.trim() ?? (userData?['email'] as String? ?? ''),
+      collection: FirebaseFirestore.instance
+          .collection('organizations')
+          .doc(normalizedOrganizationId)
+          .collection('receipts'),
+    );
   }
 
   // ─── invoice-id helpers ───────────────────────────────────────────────────
@@ -117,6 +169,9 @@ class ReceiptStore extends ChangeNotifier {
       items: receipt.items,
       userUid: receipt.userUid,
       status: receipt.status,
+      organizationId: receipt.organizationId,
+      createdBy: receipt.createdBy,
+      createdByEmail: receipt.createdByEmail,
     );
   }
 
@@ -243,6 +298,9 @@ class ReceiptRecord {
   final List<ReceiptLineItem> items;
   final String userUid;
   final InvoiceStatus status;
+  final String? organizationId;
+  final String? createdBy;
+  final String? createdByEmail;
 
   const ReceiptRecord({
     required this.id,
@@ -253,6 +311,9 @@ class ReceiptRecord {
     required this.createdAt,
     required this.items,
     required this.status,
+    this.organizationId,
+    this.createdBy,
+    this.createdByEmail,
   });
 
   double get subtotal =>
@@ -266,12 +327,20 @@ class ReceiptRecord {
   double get profit => subtotal - totalCost;
   double get totalProfit => profit;
 
-  Map<String, dynamic> toJson() => <String, dynamic>{
+  Map<String, dynamic> toJson({
+    String? organizationId,
+    String? createdBy,
+    String? createdByEmail,
+  }) => <String, dynamic>{
     'id': id,
     'customerName': customerName,
     'customer_name': customerName,
     'invoiceId': invoiceId,
+    'invoice_id': invoiceId,
     'userUid': userUid,
+    'organization_id': organizationId ?? this.organizationId,
+    'created_by': createdBy ?? this.createdBy ?? userUid,
+    'created_by_email': createdByEmail ?? this.createdByEmail,
     'status': status.name,
     // Store as real Firestore timestamps
     'date': Timestamp.fromDate(date),
@@ -294,13 +363,18 @@ class ReceiptRecord {
           (json['customer_name'] as String?) ??
           (json['customerName'] as String?) ??
           'عميل نُقطة',
-      invoiceId: json['invoiceId'] as String?,
+      invoiceId:
+          (json['invoiceId'] as String?) ?? (json['invoice_id'] as String?),
       date: parseDate(json['date']),
       createdAt: parseDate(json['createdAt']),
       status: InvoiceStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => InvoiceStatus.outstanding,
       ),
+      organizationId: json['organization_id'] as String?,
+      createdBy:
+          (json['created_by'] as String?) ?? (json['userUid'] as String?),
+      createdByEmail: json['created_by_email'] as String?,
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => ReceiptLineItem.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -343,6 +417,20 @@ class ReceiptLineItem {
             (json['costPrice'] as num?)?.toDouble() ??
             0,
       );
+}
+
+class _ReceiptCollectionContext {
+  final String organizationId;
+  final String userUid;
+  final String userEmail;
+  final CollectionReference<Map<String, dynamic>> collection;
+
+  const _ReceiptCollectionContext({
+    required this.organizationId,
+    required this.userUid,
+    required this.userEmail,
+    required this.collection,
+  });
 }
 
 class MonthlyRevenue {

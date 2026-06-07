@@ -289,7 +289,12 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
         throw StateError('A valid organization_id is required.');
       }
 
-      await FirebaseFirestore.instance.collection('support_tickets').add({
+      final docRef = FirebaseFirestore.instance
+          .collection('support_tickets')
+          .doc();
+
+      await docRef.set({
+        'ticket_id': docRef.id,
         'user_id': userId,
         'organization_id': organizationId.trim(),
         'user_email': userEmail,
@@ -302,9 +307,9 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.requestSentSuccessfully)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request sent. Our team will follow up.')),
+      );
 
       _messageController.clear();
     } catch (e) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:invoice_ai/helper/get_current_user_profile.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
+import 'package:invoice_ai/services/pending_invoices_service.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -42,8 +43,14 @@ class AppBottomNavBar extends StatelessWidget {
 
 class AppTabScope extends InheritedWidget {
   final void Function(String route)? switchToRoute;
+  final void Function(PendingInvoice invoice)? openPendingInvoice;
 
-  const AppTabScope({super.key, required super.child, this.switchToRoute});
+  const AppTabScope({
+    super.key,
+    required super.child,
+    this.switchToRoute,
+    this.openPendingInvoice,
+  });
 
   static AppTabScope? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<AppTabScope>();
@@ -51,7 +58,8 @@ class AppTabScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AppTabScope oldWidget) {
-    return switchToRoute != oldWidget.switchToRoute;
+    return switchToRoute != oldWidget.switchToRoute ||
+        openPendingInvoice != oldWidget.openPendingInvoice;
   }
 }
 

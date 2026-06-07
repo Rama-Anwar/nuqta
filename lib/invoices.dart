@@ -8,6 +8,7 @@ import 'helper/get_current_user_profile.dart';
 import 'models/invoice_model.dart';
 import 'models/user_profile_model.dart';
 import 'nav.dart';
+import 'widgets/pending_invoices_badge.dart';
 
 class InvoicesPage extends StatefulWidget {
   const InvoicesPage({super.key});
@@ -239,11 +240,12 @@ class _InvoicesPageState extends State<InvoicesPage> {
     return Scaffold(
       backgroundColor: AppColors.backgroundScaffold,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: AppColors.backgroundScaffold,
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          'Invoice AI',
+          l10n.invoices,
           style: GoogleFonts.montserrat(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -251,11 +253,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.receipt_long, color: AppColors.accent),
-            onPressed: () {},
+          PendingInvoicesBadgeButton(
+            onInvoiceSelected: (invoice) {
+              AppTabScope.maybeOf(context)?.openPendingInvoice?.call(invoice);
+            },
           ),
-          const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -621,7 +623,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
                   canChangeStatus
                       ? GestureDetector(
                           onTap: () => _toggleStatus(invoice),
-                          child: _buildStatusPill(invoice.status, l10n),
+                          child: _buildStatusPill(
+                            invoice.status,
+                            l10n,
+                            tappable: true,
+                          ),
                         )
                       : _buildStatusPill(invoice.status, l10n),
                 ],
@@ -662,7 +668,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
     );
   }
 
-  Widget _buildStatusPill(InvoiceStatus status, AppLocalizations l10n) {
+  Widget _buildStatusPill(
+    InvoiceStatus status,
+    AppLocalizations l10n, {
+    bool tappable = false,
+  }) {
     late final Color color;
     late final String label;
     switch (status) {
@@ -681,16 +691,24 @@ class _InvoicesPageState extends State<InvoicesPage> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
+        border: Border.all(
+          color: color.withValues(alpha: tappable ? 0.28 : 0.0),
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.5,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -957,7 +975,11 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
     });
   }
 
-  Widget _buildDetailStatusPill(InvoiceStatus status, AppLocalizations l10n) {
+  Widget _buildDetailStatusPill(
+    InvoiceStatus status,
+    AppLocalizations l10n, {
+    bool tappable = false,
+  }) {
     late final Color color;
     late final String label;
     switch (status) {
@@ -975,16 +997,24 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
+        border: Border.all(
+          color: color.withValues(alpha: tappable ? 0.28 : 0.0),
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.5,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1087,7 +1117,11 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
               child: widget.canChangeStatus
                   ? GestureDetector(
                       onTap: _toggleStatus,
-                      child: _buildDetailStatusPill(_invoice.status, l10n),
+                      child: _buildDetailStatusPill(
+                        _invoice.status,
+                        l10n,
+                        tappable: true,
+                      ),
                     )
                   : _buildDetailStatusPill(_invoice.status, l10n),
             ),
