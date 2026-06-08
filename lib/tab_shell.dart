@@ -162,7 +162,7 @@ class _AppTabShellState extends State<AppTabShell> {
   Widget _pageForEntry(AppNavEntry entry) {
     return _KeepAliveTab(
       child: switch (entry.route) {
-        AppRoutes.dash => const DashPage(),
+        AppRoutes.dash => DashPage(),
         AppRoutes.receipts => ReceivePage(controller: _receivePageController),
         AppRoutes.invoices => const InvoicesPage(),
         AppRoutes.profile => const ProfileScreen(),
