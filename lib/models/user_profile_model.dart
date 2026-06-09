@@ -58,14 +58,13 @@ class UserProfile {
           ? (userData['organization_id'] as String).trim()
           : '',
       role: role,
-      billingDate: _parseDate(
-        organizationData?['billing_date'] ?? organizationData?['billing date'],
-      ),
+      billingDate: _parseDate(organizationData?['billing_date']),
     );
   }
 
   static DateTime? _parseDate(dynamic value) {
     if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
     if (value is String) return DateTime.tryParse(value);
     return null;
   }
