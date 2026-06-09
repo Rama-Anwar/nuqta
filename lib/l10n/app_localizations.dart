@@ -386,6 +386,144 @@ abstract class AppLocalizations {
   /// **'Dashboard'**
   String get dashboard;
 
+  /// No description provided for @dashboardLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load dashboard data. Check your organization access.'**
+  String get dashboardLoadError;
+
+  /// No description provided for @dashboardTotalProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL PROFIT'**
+  String get dashboardTotalProfit;
+
+  /// No description provided for @dashboardPaidSales.
+  ///
+  /// In en, this message translates to:
+  /// **'PAID SALES'**
+  String get dashboardPaidSales;
+
+  /// No description provided for @dashboardAverageInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'AVG INVOICE'**
+  String get dashboardAverageInvoice;
+
+  /// No description provided for @dashboardCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'CUSTOMERS'**
+  String get dashboardCustomers;
+
+  /// No description provided for @dashboardRevenueVsExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue vs Expenses'**
+  String get dashboardRevenueVsExpenses;
+
+  /// No description provided for @dashboardMonthlyPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly performance tracking'**
+  String get dashboardMonthlyPerformance;
+
+  /// No description provided for @dashboardRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get dashboardRevenue;
+
+  /// No description provided for @dashboardExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get dashboardExpenses;
+
+  /// No description provided for @dashboardToday.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY'**
+  String get dashboardToday;
+
+  /// No description provided for @dashboardWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'WEEK'**
+  String get dashboardWeek;
+
+  /// No description provided for @dashboardMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'MONTH'**
+  String get dashboardMonth;
+
+  /// No description provided for @dashboardYear.
+  ///
+  /// In en, this message translates to:
+  /// **'YEAR'**
+  String get dashboardYear;
+
+  /// No description provided for @dashboardBestSellingProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'BEST-SELLING PRODUCTS'**
+  String get dashboardBestSellingProducts;
+
+  /// No description provided for @dashboardLeastSellingProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'LEAST SELLING PRODUCTS'**
+  String get dashboardLeastSellingProducts;
+
+  /// No description provided for @dashboardBest.
+  ///
+  /// In en, this message translates to:
+  /// **'BEST'**
+  String get dashboardBest;
+
+  /// No description provided for @dashboardLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'LEAST'**
+  String get dashboardLeast;
+
+  /// No description provided for @dashboardNoProductSales.
+  ///
+  /// In en, this message translates to:
+  /// **'No product sales yet.'**
+  String get dashboardNoProductSales;
+
+  /// No description provided for @dashboardInvoiceLineItem.
+  ///
+  /// In en, this message translates to:
+  /// **'INVOICE LINE ITEM'**
+  String get dashboardInvoiceLineItem;
+
+  /// No description provided for @dashboardUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units'**
+  String dashboardUnits(Object count);
+
+  /// No description provided for @dashboardTopCustomersByValue.
+  ///
+  /// In en, this message translates to:
+  /// **'TOP CUSTOMERS BY VALUE'**
+  String get dashboardTopCustomersByValue;
+
+  /// No description provided for @dashboardNoCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'No customers yet.'**
+  String get dashboardNoCustomers;
+
+  /// No description provided for @dashboardInvoicesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} invoices'**
+  String dashboardInvoicesCount(Object count);
+
   /// No description provided for @receipts.
   ///
   /// In en, this message translates to:

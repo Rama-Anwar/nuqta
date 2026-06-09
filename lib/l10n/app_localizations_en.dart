@@ -161,6 +161,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboard => 'Dashboard';
 
   @override
+  String get dashboardLoadError =>
+      'Unable to load dashboard data. Check your organization access.';
+
+  @override
+  String get dashboardTotalProfit => 'TOTAL PROFIT';
+
+  @override
+  String get dashboardPaidSales => 'PAID SALES';
+
+  @override
+  String get dashboardAverageInvoice => 'AVG INVOICE';
+
+  @override
+  String get dashboardCustomers => 'CUSTOMERS';
+
+  @override
+  String get dashboardRevenueVsExpenses => 'Revenue vs Expenses';
+
+  @override
+  String get dashboardMonthlyPerformance => 'Monthly performance tracking';
+
+  @override
+  String get dashboardRevenue => 'Revenue';
+
+  @override
+  String get dashboardExpenses => 'Expenses';
+
+  @override
+  String get dashboardToday => 'TODAY';
+
+  @override
+  String get dashboardWeek => 'WEEK';
+
+  @override
+  String get dashboardMonth => 'MONTH';
+
+  @override
+  String get dashboardYear => 'YEAR';
+
+  @override
+  String get dashboardBestSellingProducts => 'BEST-SELLING PRODUCTS';
+
+  @override
+  String get dashboardLeastSellingProducts => 'LEAST SELLING PRODUCTS';
+
+  @override
+  String get dashboardBest => 'BEST';
+
+  @override
+  String get dashboardLeast => 'LEAST';
+
+  @override
+  String get dashboardNoProductSales => 'No product sales yet.';
+
+  @override
+  String get dashboardInvoiceLineItem => 'INVOICE LINE ITEM';
+
+  @override
+  String dashboardUnits(Object count) {
+    return '$count units';
+  }
+
+  @override
+  String get dashboardTopCustomersByValue => 'TOP CUSTOMERS BY VALUE';
+
+  @override
+  String get dashboardNoCustomers => 'No customers yet.';
+
+  @override
+  String dashboardInvoicesCount(Object count) {
+    return '$count invoices';
+  }
+
+  @override
   String get receipts => 'Receipts';
 
   @override

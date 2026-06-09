@@ -157,7 +157,7 @@ class _ReceivePageState extends State<ReceivePage> {
       _customerController.text = inv.customerName;
       _invoiceController.text = inv.invoiceId;
       if (inv.date != null) {
-        _dateController.text = inv.date!.toIso8601String().split('T').first;
+        _dateController.text = _formatReceiptDate(inv.date!);
       }
       _items
         ..clear()
@@ -180,6 +180,42 @@ class _ReceivePageState extends State<ReceivePage> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  DateTime _parseReceiptDate(String value) {
+    final raw = value.trim();
+    if (raw.isEmpty) return DateTime.now();
+
+    final parsed = DateTime.tryParse(raw);
+    if (parsed != null) {
+      return DateTime(parsed.year, parsed.month, parsed.day);
+    }
+
+    final match = RegExp(
+      r'^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$',
+    ).firstMatch(raw);
+    if (match == null) return DateTime.now();
+
+    final first = int.tryParse(match.group(1)!);
+    final second = int.tryParse(match.group(2)!);
+    final year = int.tryParse(match.group(3)!);
+    if (first == null || second == null || year == null) {
+      return DateTime.now();
+    }
+
+    final day = first;
+    final month = second;
+    final date = DateTime(year, month, day);
+    if (date.year != year || date.month != month || date.day != day) {
+      return DateTime.now();
+    }
+    return date;
+  }
+
+  String _formatReceiptDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day-$month-${date.year}';
   }
 
   Future<void> _submit(AppLocalizations l10n) async {
@@ -219,8 +255,7 @@ class _ReceivePageState extends State<ReceivePage> {
           userUid: FirebaseAuth.instance.currentUser!.uid,
           customerName: customerName,
           invoiceId: invoiceId.isEmpty ? null : invoiceId,
-          date:
-              DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
+          date: _parseReceiptDate(_dateController.text),
           createdAt: DateTime.now(),
           status: InvoiceStatus.outstanding,
           items: _items
@@ -277,8 +312,7 @@ class _ReceivePageState extends State<ReceivePage> {
           userUid: FirebaseAuth.instance.currentUser!.uid,
           customerName: customerName,
           invoiceId: invoiceId.isEmpty ? null : invoiceId,
-          date:
-              DateTime.tryParse(_dateController.text.trim()) ?? DateTime.now(),
+          date: _parseReceiptDate(_dateController.text),
           createdAt: DateTime.now(),
           status: InvoiceStatus.outstanding,
           items: _items
@@ -679,7 +713,7 @@ class _DesktopLayout extends StatelessWidget {
                     _LabeledInput(
                       controller: dateController,
                       label: l10n.date,
-                      hint: '2023-10-27',
+                      hint: '01-05-2026',
                       mono: true,
                       isDate: true,
                     ),
@@ -853,7 +887,7 @@ class _MobileLayout extends StatelessWidget {
               _LabeledInput(
                 controller: dateController,
                 label: l10n.date,
-                hint: '2023-10-27',
+                hint: '01-05-2026',
                 mono: true,
                 isDate: true,
               ),
@@ -1427,7 +1461,9 @@ class _LabeledInput extends StatelessWidget {
         const SizedBox(height: 6),
         TextField(
           controller: controller,
-          keyboardType: isDate || isNumber
+          keyboardType: isDate
+              ? TextInputType.datetime
+              : isNumber
               ? TextInputType.number
               : TextInputType.text,
           style: TextStyle(

@@ -77,6 +77,39 @@
   "costLabel": "التكلفة",
 
   "dashboard": "لوحة التحكم",
+  "dashboardLoadError": "تعذر تحميل بيانات لوحة التحكم. تحقق من صلاحية الوصول إلى المنشأة.",
+  "dashboardTotalProfit": "إجمالي الربح",
+  "dashboardPaidSales": "المبيعات المدفوعة",
+  "dashboardAverageInvoice": "متوسط الفاتورة",
+  "dashboardCustomers": "العملاء",
+  "dashboardRevenueVsExpenses": "الإيرادات مقابل المصروفات",
+  "dashboardMonthlyPerformance": "متابعة الأداء الشهري",
+  "dashboardRevenue": "الإيرادات",
+  "dashboardExpenses": "المصروفات",
+  "dashboardToday": "اليوم",
+  "dashboardWeek": "الأسبوع",
+  "dashboardMonth": "الشهر",
+  "dashboardYear": "السنة",
+  "dashboardBestSellingProducts": "المنتجات الأكثر مبيعاً",
+  "dashboardLeastSellingProducts": "المنتجات الأقل مبيعاً",
+  "dashboardBest": "الأكثر",
+  "dashboardLeast": "الأقل",
+  "dashboardNoProductSales": "لا توجد مبيعات منتجات بعد.",
+  "dashboardInvoiceLineItem": "عنصر فاتورة",
+  "dashboardUnits": "{count} وحدة",
+  "@dashboardUnits": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "dashboardTopCustomersByValue": "أعلى العملاء حسب القيمة",
+  "dashboardNoCustomers": "لا يوجد عملاء بعد.",
+  "dashboardInvoicesCount": "{count} فاتورة",
+  "@dashboardInvoicesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "receipts": "الإيصالات",
   "invoices": "الفواتير",
   "profile": "الملف الشخصي",

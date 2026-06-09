@@ -82,6 +82,39 @@
   "costLabel": "Cost",
 
   "dashboard": "Dashboard",
+  "dashboardLoadError": "Unable to load dashboard data. Check your organization access.",
+  "dashboardTotalProfit": "TOTAL PROFIT",
+  "dashboardPaidSales": "PAID SALES",
+  "dashboardAverageInvoice": "AVG INVOICE",
+  "dashboardCustomers": "CUSTOMERS",
+  "dashboardRevenueVsExpenses": "Revenue vs Expenses",
+  "dashboardMonthlyPerformance": "Monthly performance tracking",
+  "dashboardRevenue": "Revenue",
+  "dashboardExpenses": "Expenses",
+  "dashboardToday": "TODAY",
+  "dashboardWeek": "WEEK",
+  "dashboardMonth": "MONTH",
+  "dashboardYear": "YEAR",
+  "dashboardBestSellingProducts": "BEST-SELLING PRODUCTS",
+  "dashboardLeastSellingProducts": "LEAST SELLING PRODUCTS",
+  "dashboardBest": "BEST",
+  "dashboardLeast": "LEAST",
+  "dashboardNoProductSales": "No product sales yet.",
+  "dashboardInvoiceLineItem": "INVOICE LINE ITEM",
+  "dashboardUnits": "{count} units",
+  "@dashboardUnits": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "dashboardTopCustomersByValue": "TOP CUSTOMERS BY VALUE",
+  "dashboardNoCustomers": "No customers yet.",
+  "dashboardInvoicesCount": "{count} invoices",
+  "@dashboardInvoicesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "receipts": "Receipts",
   "invoices": "Invoices",
   "profile": "Profile",

@@ -160,6 +160,80 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboard => 'لوحة التحكم';
 
   @override
+  String get dashboardLoadError =>
+      'تعذر تحميل بيانات لوحة التحكم. تحقق من صلاحية الوصول إلى المنشأة.';
+
+  @override
+  String get dashboardTotalProfit => 'إجمالي الربح';
+
+  @override
+  String get dashboardPaidSales => 'المبيعات المدفوعة';
+
+  @override
+  String get dashboardAverageInvoice => 'متوسط الفاتورة';
+
+  @override
+  String get dashboardCustomers => 'العملاء';
+
+  @override
+  String get dashboardRevenueVsExpenses => 'الإيرادات مقابل المصروفات';
+
+  @override
+  String get dashboardMonthlyPerformance => 'متابعة الأداء الشهري';
+
+  @override
+  String get dashboardRevenue => 'الإيرادات';
+
+  @override
+  String get dashboardExpenses => 'المصروفات';
+
+  @override
+  String get dashboardToday => 'اليوم';
+
+  @override
+  String get dashboardWeek => 'الأسبوع';
+
+  @override
+  String get dashboardMonth => 'الشهر';
+
+  @override
+  String get dashboardYear => 'السنة';
+
+  @override
+  String get dashboardBestSellingProducts => 'المنتجات الأكثر مبيعاً';
+
+  @override
+  String get dashboardLeastSellingProducts => 'المنتجات الأقل مبيعاً';
+
+  @override
+  String get dashboardBest => 'الأكثر';
+
+  @override
+  String get dashboardLeast => 'الأقل';
+
+  @override
+  String get dashboardNoProductSales => 'لا توجد مبيعات منتجات بعد.';
+
+  @override
+  String get dashboardInvoiceLineItem => 'عنصر فاتورة';
+
+  @override
+  String dashboardUnits(Object count) {
+    return '$count وحدة';
+  }
+
+  @override
+  String get dashboardTopCustomersByValue => 'أعلى العملاء حسب القيمة';
+
+  @override
+  String get dashboardNoCustomers => 'لا يوجد عملاء بعد.';
+
+  @override
+  String dashboardInvoicesCount(Object count) {
+    return '$count فاتورة';
+  }
+
+  @override
   String get receipts => 'الإيصالات';
 
   @override

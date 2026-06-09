@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
@@ -26,22 +29,47 @@ class _AppTabShellState extends State<AppTabShell> {
   UserProfile? _profile;
   bool _isLoadingProfile = true;
   bool _isSubscriptionExpired = false;
+  bool _isSigningOut = false;
   int _currentPosition = 0;
   late final ReceivePageController _receivePageController;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+  _userActiveSubscription;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
     _receivePageController = ReceivePageController();
+    _listenForUserActiveChanges();
     _loadProfile();
   }
 
   @override
   void dispose() {
+    _userActiveSubscription?.cancel();
     _receivePageController.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _listenForUserActiveChanges() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) return;
+
+    _userActiveSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .listen(
+          (snapshot) {
+            if (snapshot.data()?['is_active'] == false) {
+              _signOut();
+            }
+          },
+          onError: (error) {
+            debugPrint('Unable to listen for user active status: $error');
+          },
+        );
   }
 
   Future<void> _loadProfile() async {
@@ -96,6 +124,10 @@ class _AppTabShellState extends State<AppTabShell> {
   }
 
   Future<void> _signOut() async {
+    if (_isSigningOut) return;
+    _isSigningOut = true;
+    await _userActiveSubscription?.cancel();
+    _userActiveSubscription = null;
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
