@@ -2,6 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:invoice_ai/models/user_profile_model.dart';
 
+class InactiveOrganizationException implements Exception {
+  const InactiveOrganizationException();
+}
+
 Future<UserProfile?> getCurrentUserProfile() async {
   final uid = FirebaseAuth.instance.currentUser?.uid;
 
@@ -23,6 +27,9 @@ Future<UserProfile?> getCurrentUserProfile() async {
         .doc(organizationId.trim())
         .get();
     organizationData = organizationDoc.data();
+    if (organizationDoc.exists && organizationData?['is_active'] != true) {
+      throw const InactiveOrganizationException();
+    }
   }
 
   return UserProfile.fromFirestore(

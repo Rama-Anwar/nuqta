@@ -68,6 +68,12 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+    } on InactiveOrganizationException {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_subscriptionExpiredMessage(context))),
+      );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -79,6 +85,12 @@ class _LoginPageState extends State<LoginPage> {
         _isLoading = false;
       });
     }
+  }
+
+  String _subscriptionExpiredMessage(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'ar'
+        ? 'اشتراكك منتهي، يرجى تجديد الاشتراك للاستمرار باستخدام Invoice AI.'
+        : 'Your subscription has expired. Please renew your subscription to continue using Invoice AI.';
   }
 
   @override
