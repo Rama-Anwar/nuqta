@@ -140,68 +140,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
               children: [
-                _buildProfileHeader(l10n),
-                const SizedBox(height: 28),
-                _buildSectionCard(
-                  title: l10n.business,
-                  child: Column(
-                    children: [
-                      _buildInfoRow(
-                        label: l10n.registeredName,
-                        value: profile?.name ?? l10n.unknownBusiness,
-                        icon: Icons.apartment_outlined,
+                ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
+                  children: [
+                    _buildProfileHeader(l10n),
+                    const SizedBox(height: 28),
+                    _buildSectionCard(
+                      title: l10n.business,
+                      child: Column(
+                        children: [
+                          _buildInfoRow(
+                            label: l10n.registeredName,
+                            value: profile?.name ?? l10n.unknownBusiness,
+                            icon: Icons.apartment_outlined,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (isOwner) ...[
-                  _buildSectionCard(
-                    title: l10n.plan,
-                    child: _buildPlanSection(l10n),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                _buildSectionCard(
-                  title: l10n.tools,
-                  child: Column(
-                    children: [
-                      if (isOwner) ...[
-                        _buildActionRow(
-                          icon: Icons.inventory_2_outlined,
-                          title: l10n.inventorySheet,
-                          subtitle: l10n.manageStockAndProducts,
-                          onTap: () => _openInventorySheet(l10n),
-                        ),
-                        _buildDivider(),
-                      ],
-                      _buildActionRow(
-                        icon: Icons.support_agent_outlined,
-                        title: l10n.technicalSupport,
-                        subtitle: l10n.contactHelpDesk,
-                        onTap: () =>
-                            Navigator.of(context).pushNamed(AppRoutes.support),
+                    ),
+                    const SizedBox(height: 16),
+                    if (isOwner) ...[
+                      _buildSectionCard(
+                        title: l10n.plan,
+                        child: _buildPlanSection(l10n),
                       ),
+                      const SizedBox(height: 16),
                     ],
+                    _buildSectionCard(
+                      title: l10n.tools,
+                      child: Column(
+                        children: [
+                          if (isOwner) ...[
+                            _buildActionRow(
+                              icon: Icons.inventory_2_outlined,
+                              title: l10n.inventorySheet,
+                              subtitle: l10n.manageStockAndProducts,
+                              onTap: () => _openInventorySheet(l10n),
+                            ),
+                            _buildDivider(),
+                          ],
+                          _buildActionRow(
+                            icon: Icons.support_agent_outlined,
+                            title: l10n.technicalSupport,
+                            subtitle: l10n.contactHelpDesk,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(AppRoutes.support),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildSectionCard(
+                      title: l10n.settings,
+                      child: _buildLanguageRow(l10n),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildSectionCard(
+                      title: l10n.account,
+                      child: _buildAccountSection(l10n),
+                    ),
+                  ],
+                ),
+                if (isOwner && profile != null)
+                  PositionedDirectional(
+                    end: 20,
+                    top: MediaQuery.of(context).size.height * 0.58,
+                    child: _buildAiAssistantFloatingButton(),
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildSectionCard(
-                  title: l10n.settings,
-                  child: _buildLanguageRow(l10n),
-                ),
-                const SizedBox(height: 16),
-                _buildSectionCard(
-                  title: l10n.account,
-                  child: _buildAccountSection(l10n),
-                ),
               ],
             ),
       bottomNavigationBar: AppBottomNavBar(activeIndex: 3),
+    );
+  }
+
+  Widget _buildAiAssistantFloatingButton() {
+    const label = 'Maven';
+
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: Container(
+          width: 62,
+          height: 62,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.34),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Material(
+            color: AppColors.accent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.aiAssistant),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

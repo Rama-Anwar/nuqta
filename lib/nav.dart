@@ -12,6 +12,7 @@ class AppRoutes {
   static const String invoices = '/invoices';
   static const String profile = '/profile';
   static const String support = '/support';
+  static const String aiAssistant = '/ai-assistant';
 }
 
 class AppBottomNavBar extends StatelessWidget {

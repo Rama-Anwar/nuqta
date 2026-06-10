@@ -7,6 +7,7 @@ import 'package:invoice_ai/l10n/app_localizations.dart';
 import 'package:invoice_ai/providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'ai_assistant.dart';
 import 'login.dart';
 import 'nav.dart';
 import 'splash_screen.dart';
@@ -61,6 +62,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.profile: (_) =>
             const AppTabShell(initialRoute: AppRoutes.profile),
         AppRoutes.support: (_) => const TechnicalSupportPage(),
+        AppRoutes.aiAssistant: (_) => const AiAssistantScreen(),
       },
       home: SplashScreen(
         nextScreenBuilder: () => _loadStartupScreen(localeProvider),
