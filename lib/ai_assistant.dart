@@ -174,15 +174,20 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            if (user == null) _buildSignedOutBanner(context),
-            Expanded(child: _buildMessageList(context, messages)),
-            if (_isSending) _buildTypingIndicator(context),
-            if (!_quickPromptsHiddenForSession)
-              _buildQuickPrompts(context, enabled: canSend),
-            _buildComposer(context, enabled: user != null),
-          ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 980),
+            child: Column(
+              children: [
+                if (user == null) _buildSignedOutBanner(context),
+                Expanded(child: _buildMessageList(context, messages)),
+                if (_isSending) _buildTypingIndicator(context),
+                if (!_quickPromptsHiddenForSession)
+                  _buildQuickPrompts(context, enabled: canSend),
+                _buildComposer(context, enabled: user != null),
+              ],
+            ),
+          ),
         ),
       ),
     );

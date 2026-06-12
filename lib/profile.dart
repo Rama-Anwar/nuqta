@@ -111,6 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isOwner = profile?.isOwner == true;
+    final isDesktop = MediaQuery.sizeOf(context).width >= 1024;
     return Scaffold(
       backgroundColor: AppColors.primaryBg,
       appBar: AppBar(
@@ -144,75 +145,138 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : Stack(
               children: [
                 ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    24,
+                    20,
+                    isDesktop ? 40 : 112,
+                  ),
                   children: [
-                    _buildProfileHeader(l10n),
-                    const SizedBox(height: 28),
-                    _buildSectionCard(
-                      title: l10n.business,
-                      child: Column(
-                        children: [
-                          _buildInfoRow(
-                            label: l10n.registeredName,
-                            value: profile?.name ?? l10n.unknownBusiness,
-                            icon: Icons.apartment_outlined,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (isOwner) ...[
-                      _buildSectionCard(
-                        title: l10n.plan,
-                        child: _buildPlanSection(l10n),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    _buildSectionCard(
-                      title: l10n.tools,
-                      child: Column(
-                        children: [
-                          if (isOwner) ...[
-                            _buildActionRow(
-                              icon: Icons.inventory_2_outlined,
-                              title: l10n.inventorySheet,
-                              subtitle: l10n.manageStockAndProducts,
-                              onTap: () => _openInventorySheet(l10n),
-                            ),
-                            _buildDivider(),
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1120),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildProfileHeader(l10n),
+                            const SizedBox(height: 28),
+                            if (isDesktop)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        _buildBusinessCard(l10n),
+                                        if (isOwner) ...[
+                                          const SizedBox(height: 16),
+                                          _buildSectionCard(
+                                            title: l10n.plan,
+                                            child: _buildPlanSection(l10n),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        _buildToolsCard(l10n, isOwner),
+                                        const SizedBox(height: 16),
+                                        _buildSectionCard(
+                                          title: l10n.settings,
+                                          child: _buildLanguageRow(l10n),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildSectionCard(
+                                          title: l10n.account,
+                                          child: _buildAccountSection(l10n),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else ...[
+                              _buildBusinessCard(l10n),
+                              const SizedBox(height: 16),
+                              if (isOwner) ...[
+                                _buildSectionCard(
+                                  title: l10n.plan,
+                                  child: _buildPlanSection(l10n),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                              _buildToolsCard(l10n, isOwner),
+                              const SizedBox(height: 16),
+                              _buildSectionCard(
+                                title: l10n.settings,
+                                child: _buildLanguageRow(l10n),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildSectionCard(
+                                title: l10n.account,
+                                child: _buildAccountSection(l10n),
+                              ),
+                            ],
                           ],
-                          _buildActionRow(
-                            icon: Icons.support_agent_outlined,
-                            title: l10n.technicalSupport,
-                            subtitle: l10n.contactHelpDesk,
-                            onTap: () => Navigator.of(
-                              context,
-                            ).pushNamed(AppRoutes.support),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSectionCard(
-                      title: l10n.settings,
-                      child: _buildLanguageRow(l10n),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSectionCard(
-                      title: l10n.account,
-                      child: _buildAccountSection(l10n),
                     ),
                   ],
                 ),
                 if (isOwner && profile != null)
                   PositionedDirectional(
-                    end: 20,
-                    top: MediaQuery.of(context).size.height * 0.58,
+                    end: isDesktop ? 32 : 20,
+                    top: isDesktop
+                        ? 32
+                        : MediaQuery.of(context).size.height * 0.58,
                     child: _buildAiAssistantFloatingButton(),
                   ),
               ],
             ),
       bottomNavigationBar: AppBottomNavBar(activeIndex: 3),
+    );
+  }
+
+  Widget _buildBusinessCard(AppLocalizations l10n) {
+    return _buildSectionCard(
+      title: l10n.business,
+      child: Column(
+        children: [
+          _buildInfoRow(
+            label: l10n.registeredName,
+            value: profile?.name ?? l10n.unknownBusiness,
+            icon: Icons.apartment_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolsCard(AppLocalizations l10n, bool isOwner) {
+    return _buildSectionCard(
+      title: l10n.tools,
+      child: Column(
+        children: [
+          if (isOwner) ...[
+            _buildActionRow(
+              icon: Icons.inventory_2_outlined,
+              title: l10n.inventorySheet,
+              subtitle: l10n.manageStockAndProducts,
+              onTap: () => _openInventorySheet(l10n),
+            ),
+            _buildDivider(),
+          ],
+          _buildActionRow(
+            icon: Icons.support_agent_outlined,
+            title: l10n.technicalSupport,
+            subtitle: l10n.contactHelpDesk,
+            onTap: () => Navigator.of(context).pushNamed(AppRoutes.support),
+          ),
+        ],
+      ),
     );
   }
 

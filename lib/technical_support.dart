@@ -58,15 +58,48 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
           child: Divider(color: _border, height: 1),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
-        children: [
-          _buildIntroCard(l10n),
-          const SizedBox(height: 16),
-          _buildIssueSelector(l10n),
-          const SizedBox(height: 16),
-          _buildMessageCard(l10n),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= 900;
+          return ListView(
+            padding: EdgeInsets.fromLTRB(16, 20, 16, isDesktop ? 40 : 120),
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1040),
+                  child: isDesktop
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 4,
+                              child: Column(
+                                children: [
+                                  _buildIntroCard(l10n),
+                                  const SizedBox(height: 16),
+                                  _buildIssueSelector(l10n),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(flex: 5, child: _buildMessageCard(l10n)),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildIntroCard(l10n),
+                            const SizedBox(height: 16),
+                            _buildIssueSelector(l10n),
+                            const SizedBox(height: 16),
+                            _buildMessageCard(l10n),
+                          ],
+                        ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
       bottomNavigationBar: AppBottomNavBar(activeIndex: 3),
     );

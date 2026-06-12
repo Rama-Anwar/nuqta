@@ -252,25 +252,46 @@ class _AppTabShellState extends State<AppTabShell> {
     final entries = _entriesFor(_profile);
     final pages = entries.map(_pageForEntry).toList();
     final activeIndex = entries[_currentPosition].index;
+    final isDesktop = MediaQuery.sizeOf(context).width >= 768;
 
     return AppTabScope(
       switchToRoute: _switchToRoute,
       openPendingInvoice: _openPendingInvoice,
       child: Scaffold(
         backgroundColor: const Color(0xFF1A1D20),
-        body: PageView(
-          controller: _pageController,
-          onPageChanged: (index) {
-            setState(() => _currentPosition = index);
-          },
-          children: pages,
-        ),
+        body: isDesktop
+            ? Row(
+                children: [
+                  _DesktopNavigationRail(
+                    entries: entries,
+                    selectedPosition: _currentPosition,
+                    onEntryTap: _switchToEntry,
+                  ),
+                  const VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: Color(0xFF3E444A),
+                  ),
+                  Expanded(child: _buildPageView(pages)),
+                ],
+              )
+            : _buildPageView(pages),
         bottomNavigationBar: AppBottomNavigationSurface(
           activeIndex: activeIndex,
           isOwner: _profile?.isOwner == true,
           onEntryTap: _switchToEntry,
         ),
       ),
+    );
+  }
+
+  Widget _buildPageView(List<Widget> pages) {
+    return PageView(
+      controller: _pageController,
+      onPageChanged: (index) {
+        setState(() => _currentPosition = index);
+      },
+      children: pages,
     );
   }
 
@@ -283,6 +304,114 @@ class _AppTabShellState extends State<AppTabShell> {
         AppRoutes.profile => const ProfileScreen(),
         _ => ReceivePage(controller: _receivePageController),
       },
+    );
+  }
+}
+
+class _DesktopNavigationRail extends StatelessWidget {
+  final List<AppNavEntry> entries;
+  final int selectedPosition;
+  final ValueChanged<AppNavEntry> onEntryTap;
+
+  const _DesktopNavigationRail({
+    required this.entries,
+    required this.selectedPosition,
+    required this.onEntryTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedRoute = entries[selectedPosition].route;
+
+    return SafeArea(
+      child: SizedBox(
+        width: 240,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  'Invoice AI',
+                  style: TextStyle(
+                    color: Color(0xFFDEE2E6),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: entries.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final entry = entries[index];
+                    final isSelected = entry.route == selectedRoute;
+                    return _DesktopNavigationItem(
+                      entry: entry,
+                      isSelected: isSelected,
+                      onTap: () => onEntryTap(entry),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopNavigationItem extends StatelessWidget {
+  final AppNavEntry entry;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DesktopNavigationItem({
+    required this.entry,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected
+        ? const Color(0xFFEE671C)
+        : const Color(0xFFDEE2E6).withValues(alpha: 0.72);
+
+    return Material(
+      color: isSelected
+          ? const Color(0xFFEE671C).withValues(alpha: 0.12)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Icon(entry.icon, color: color, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  entry.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

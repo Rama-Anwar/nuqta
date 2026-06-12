@@ -308,124 +308,127 @@ class _InvoicesPageState extends State<InvoicesPage> {
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
                 children: [
-                  _buildFilterSectionWithInvoices(invoices, l10n),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        l10n.invoiceLedger,
-                        style: GoogleFonts.inter(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      Row(
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1180),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          IconButton(
-                            tooltip: l10n.pickDate,
-                            onPressed: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: _selectedDate ?? DateTime.now(),
-                                firstDate: DateTime(2000),
-                                lastDate: DateTime(2100),
-                              );
-
-                              if (picked != null) {
-                                setState(() {
-                                  _selectedDate = picked;
-                                  selectedYear = picked.year.toString();
-                                  selectedMonth = _monthLabel(
-                                    picked.month,
-                                    l10n,
-                                  );
-                                  isAllSelected = false;
-                                });
-                              }
-                            },
-                            icon: const Icon(
-                              Icons.calendar_month_outlined,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-
-                          const SizedBox(width: 4),
-
-                          Text(
-                            '${visibleInvoices.length} ${l10n.total}',
-                            style: GoogleFonts.jetBrainsMono(
-                              color: AppColors.accent,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  ...visibleInvoices.map(
-                    (invoice) => _buildDismissibleCard(
-                      invoice,
-                      l10n,
-                      canDeleteInvoices: isOwner,
-                      canChangeStatus: true,
-                      canViewFinancials: isOwner,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final tileWidth = constraints.maxWidth >= 435
-                          ? (constraints.maxWidth - 32) / 3
-                          : constraints.maxWidth >= 290
-                          ? (constraints.maxWidth - 16) / 2
-                          : constraints.maxWidth;
-
-                      return Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          SizedBox(
-                            width: tileWidth,
-                            child: _buildStatTile(
-                              l10n.outstanding,
-                              _currency(outstandingTotal),
-                              Icons.pending_actions,
-                              AppColors.errorMuted,
-                            ),
-                          ),
-                          SizedBox(
-                            width: tileWidth,
-                            child: _buildStatTile(
-                              l10n.collected,
-                              _currency(collectedTotal),
-                              Icons.account_balance_wallet,
-                              AppColors.successMuted,
-                            ),
-                          ),
-                          if (isOwner)
-                            SizedBox(
-                              width: tileWidth,
-                              child: _buildStatTile(
-                                l10n.totalProfit,
-                                _currency(earningsTotal),
-                                Icons.trending_up,
-                                AppColors.accent,
+                          _buildFilterSectionWithInvoices(invoices, l10n),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                l10n.invoiceLedger,
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textMuted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1,
+                                ),
                               ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    tooltip: l10n.pickDate,
+                                    onPressed: () async {
+                                      final picked = await showDatePicker(
+                                        context: context,
+                                        initialDate:
+                                            _selectedDate ?? DateTime.now(),
+                                        firstDate: DateTime(2000),
+                                        lastDate: DateTime(2100),
+                                      );
+
+                                      if (picked != null) {
+                                        setState(() {
+                                          _selectedDate = picked;
+                                          selectedYear = picked.year.toString();
+                                          selectedMonth = _monthLabel(
+                                            picked.month,
+                                            l10n,
+                                          );
+                                          isAllSelected = false;
+                                        });
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.calendar_month_outlined,
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${visibleInvoices.length} ${l10n.total}',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      color: AppColors.accent,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ...visibleInvoices.map(
+                            (invoice) => _buildDismissibleCard(
+                              invoice,
+                              l10n,
+                              canDeleteInvoices: isOwner,
+                              canChangeStatus: true,
+                              canViewFinancials: isOwner,
                             ),
+                          ),
+                          const SizedBox(height: 24),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final tileWidth = constraints.maxWidth >= 435
+                                  ? (constraints.maxWidth - 32) / 3
+                                  : constraints.maxWidth >= 290
+                                  ? (constraints.maxWidth - 16) / 2
+                                  : constraints.maxWidth;
+
+                              return Wrap(
+                                spacing: 16,
+                                runSpacing: 16,
+                                children: [
+                                  SizedBox(
+                                    width: tileWidth,
+                                    child: _buildStatTile(
+                                      l10n.outstanding,
+                                      _currency(outstandingTotal),
+                                      Icons.pending_actions,
+                                      AppColors.errorMuted,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: tileWidth,
+                                    child: _buildStatTile(
+                                      l10n.collected,
+                                      _currency(collectedTotal),
+                                      Icons.account_balance_wallet,
+                                      AppColors.successMuted,
+                                    ),
+                                  ),
+                                  if (isOwner)
+                                    SizedBox(
+                                      width: tileWidth,
+                                      child: _buildStatTile(
+                                        l10n.totalProfit,
+                                        _currency(earningsTotal),
+                                        Icons.trending_up,
+                                        AppColors.accent,
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
                         ],
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ],
               );
@@ -1092,168 +1095,173 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 980),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
 
-          children: [
-            Text(
-              _invoice.customerName,
-              style: GoogleFonts.montserrat(
-                color: AppColors.textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              formatDate(context, _invoice.date),
-              style: GoogleFonts.inter(color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: widget.canChangeStatus
-                  ? GestureDetector(
-                      onTap: _toggleStatus,
-                      child: _buildDetailStatusPill(
-                        _invoice.status,
-                        l10n,
-                        tappable: true,
-                      ),
-                    )
-                  : _buildDetailStatusPill(_invoice.status, l10n),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.borderLowContrast),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    l10n.lineItems,
-                    style: GoogleFonts.inter(
-                      color: AppColors.textMuted,
-                      fontWeight: FontWeight.w700,
-                    ),
+              children: [
+                Text(
+                  _invoice.customerName,
+                  style: GoogleFonts.montserrat(
+                    color: AppColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 10),
-                  ..._invoice.items.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.name,
-                              style: GoogleFonts.inter(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  formatDate(context, _invoice.date),
+                  style: GoogleFonts.inter(color: AppColors.textMuted),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: widget.canChangeStatus
+                      ? GestureDetector(
+                          onTap: _toggleStatus,
+                          child: _buildDetailStatusPill(
+                            _invoice.status,
+                            l10n,
+                            tappable: true,
                           ),
-                          Text(
-                            '${item.quantity} x',
-                            style: GoogleFonts.inter(
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '\$${item.unitPrice.toStringAsFixed(2)}',
-                            style: GoogleFonts.jetBrainsMono(
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          if (widget.canViewFinancials) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '${l10n.costLabel} \$${item.costPrice.toStringAsFixed(2)}',
-                              style: GoogleFonts.jetBrainsMono(
-                                color: AppColors.textMuted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
+                        )
+                      : _buildDetailStatusPill(_invoice.status, l10n),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.borderLowContrast),
                   ),
-                  const Divider(color: Color(0x1AFFFFFF)),
-                  if (widget.canViewFinancials) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
-                      children: [
-                        Text(
-                          l10n.costLabel,
-                          style: GoogleFonts.inter(
-                            color: AppColors.textMuted,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          '\$${_invoiceCost.toStringAsFixed(2)}',
-                          style: GoogleFonts.montserrat(
-                            color: AppColors.textMuted,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          l10n.totalProfitLabel,
-                          style: GoogleFonts.inter(
-                            color: AppColors.textMuted,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          '\$${_invoice.totalProfit.toStringAsFixed(2)}',
-                          style: GoogleFonts.montserrat(
-                            color: AppColors.accent,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        l10n.total,
+                        l10n.lineItems,
                         style: GoogleFonts.inter(
                           color: AppColors.textMuted,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      Text(
-                        '\$${_invoice.totalAmount.toStringAsFixed(2)}',
-                        style: GoogleFonts.montserrat(
-                          color: AppColors.accent,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(height: 10),
+                      ..._invoice.items.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.name,
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${item.quantity} x',
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '\$${item.unitPrice.toStringAsFixed(2)}',
+                                style: GoogleFonts.jetBrainsMono(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              if (widget.canViewFinancials) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${l10n.costLabel} \$${item.costPrice.toStringAsFixed(2)}',
+                                  style: GoogleFonts.jetBrainsMono(
+                                    color: AppColors.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
+                      ),
+                      const Divider(color: Color(0x1AFFFFFF)),
+                      if (widget.canViewFinancials) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                          children: [
+                            Text(
+                              l10n.costLabel,
+                              style: GoogleFonts.inter(
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              '\$${_invoiceCost.toStringAsFixed(2)}',
+                              style: GoogleFonts.montserrat(
+                                color: AppColors.textMuted,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              l10n.totalProfitLabel,
+                              style: GoogleFonts.inter(
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              '\$${_invoice.totalProfit.toStringAsFixed(2)}',
+                              style: GoogleFonts.montserrat(
+                                color: AppColors.accent,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            l10n.total,
+                            style: GoogleFonts.inter(
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            '\$${_invoice.totalAmount.toStringAsFixed(2)}',
+                            style: GoogleFonts.montserrat(
+                              color: AppColors.accent,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -72,9 +72,7 @@ class _DashPageState extends State<DashPage> {
         stream: _dashboardStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return _buildStateMessage(
-              l10n.dashboardLoadError,
-            );
+            return _buildStateMessage(l10n.dashboardLoadError);
           }
 
           if (!snapshot.hasData) {
@@ -93,62 +91,153 @@ class _DashPageState extends State<DashPage> {
     final profitStats = data.statsFor(_periodFromLabel(selectedRevenuePeriod));
     final salesStats = data.statsFor(_periodFromLabel(selectedSalesPeriod));
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-      children: [
-        _buildInteractiveKPI(
-          title: l10n.dashboardTotalProfit,
-          value: _currency(profitStats.totalProfit),
-          selectedPeriod: selectedRevenuePeriod,
-          l10n: l10n,
-          onPeriodChanged: (p) => setState(() => selectedRevenuePeriod = p),
-        ),
-        const SizedBox(height: 16),
-        _buildInteractiveKPI(
-          title: l10n.dashboardPaidSales,
-          value: _currency(salesStats.paidTotal),
-          selectedPeriod: selectedSalesPeriod,
-          l10n: l10n,
-          onPeriodChanged: (p) => setState(() => selectedSalesPeriod = p),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 120,
-                child: _buildSimpleStatCard(
-                  l10n.dashboardAverageInvoice,
-                  _currency(profitStats.averageInvoice),
-                  null,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 1024;
+        final content = <Widget>[
+          if (isDesktop)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 164,
+                    child: _buildInteractiveKPI(
+                      title: l10n.dashboardTotalProfit,
+                      value: _currency(profitStats.totalProfit),
+                      selectedPeriod: selectedRevenuePeriod,
+                      l10n: l10n,
+                      onPeriodChanged: (p) =>
+                          setState(() => selectedRevenuePeriod = p),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: SizedBox(
+                    height: 164,
+                    child: _buildInteractiveKPI(
+                      title: l10n.dashboardPaidSales,
+                      value: _currency(salesStats.paidTotal),
+                      selectedPeriod: selectedSalesPeriod,
+                      l10n: l10n,
+                      onPeriodChanged: (p) =>
+                          setState(() => selectedSalesPeriod = p),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: SizedBox(
+                    height: 164,
+                    child: _buildSimpleStatCard(
+                      l10n.dashboardAverageInvoice,
+                      _currency(profitStats.averageInvoice),
+                      null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: SizedBox(
+                    height: 164,
+                    child: _buildSimpleStatCard(
+                      l10n.dashboardCustomers,
+                      profitStats.customerCount.toString(),
+                      null,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else ...[
+            _buildInteractiveKPI(
+              title: l10n.dashboardTotalProfit,
+              value: _currency(profitStats.totalProfit),
+              selectedPeriod: selectedRevenuePeriod,
+              l10n: l10n,
+              onPeriodChanged: (p) => setState(() => selectedRevenuePeriod = p),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: SizedBox(
-                height: 120,
-                child: _buildSimpleStatCard(
-                  l10n.dashboardCustomers,
-                  profitStats.customerCount.toString(),
-                  null,
+            const SizedBox(height: 16),
+            _buildInteractiveKPI(
+              title: l10n.dashboardPaidSales,
+              value: _currency(salesStats.paidTotal),
+              selectedPeriod: selectedSalesPeriod,
+              l10n: l10n,
+              onPeriodChanged: (p) => setState(() => selectedSalesPeriod = p),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 120,
+                    child: _buildSimpleStatCard(
+                      l10n.dashboardAverageInvoice,
+                      _currency(profitStats.averageInvoice),
+                      null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: SizedBox(
+                    height: 120,
+                    child: _buildSimpleStatCard(
+                      l10n.dashboardCustomers,
+                      profitStats.customerCount.toString(),
+                      null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 24),
+          _buildSectionHeader(
+            l10n.dashboardRevenueVsExpenses,
+            l10n.dashboardMonthlyPerformance,
+          ),
+          const SizedBox(height: 12),
+          if (isDesktop)
+            Column(
+              children: [
+                _buildGroupedBarChart(data, l10n),
+                const SizedBox(height: 24),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildProductSwitcherCard(data, l10n)),
+                    const SizedBox(width: 24),
+                    Expanded(child: _buildCustomerList(data, l10n)),
+                  ],
+                ),
+              ],
+            )
+          else ...[
+            _buildGroupedBarChart(data, l10n),
+            const SizedBox(height: 24),
+            _buildProductSwitcherCard(data, l10n),
+            const SizedBox(height: 24),
+            _buildCustomerList(data, l10n),
+          ],
+        ];
+
+        return ListView(
+          padding: EdgeInsets.fromLTRB(16, isDesktop ? 20 : 8, 16, 40),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1280),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: content,
                 ),
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 24),
-        _buildSectionHeader(
-          l10n.dashboardRevenueVsExpenses,
-          l10n.dashboardMonthlyPerformance,
-        ),
-        const SizedBox(height: 12),
-        _buildGroupedBarChart(data, l10n),
-        const SizedBox(height: 24),
-        _buildProductSwitcherCard(data, l10n),
-        const SizedBox(height: 24),
-        _buildCustomerList(data, l10n),
-      ],
+        );
+      },
     );
   }
 
@@ -432,10 +521,7 @@ class _DashPageState extends State<DashPage> {
     );
   }
 
-  Widget _buildProductSwitcherCard(
-    DashboardData data,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildProductSwitcherCard(DashboardData data, AppLocalizations l10n) {
     final title = selectedProductTab == 'BEST'
         ? l10n.dashboardBestSellingProducts
         : l10n.dashboardLeastSellingProducts;
@@ -607,10 +693,7 @@ class _DashPageState extends State<DashPage> {
     );
   }
 
-  Widget _buildCustomerRow(
-    DashboardCustomer customer,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildCustomerRow(DashboardCustomer customer, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
