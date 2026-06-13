@@ -25,7 +25,6 @@ class AppTabShell extends StatefulWidget {
 }
 
 class _AppTabShellState extends State<AppTabShell> {
-  late PageController _pageController;
   UserProfile? _profile;
   bool _isLoadingProfile = true;
   bool _isSubscriptionExpired = false;
@@ -38,7 +37,6 @@ class _AppTabShellState extends State<AppTabShell> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
     _receivePageController = ReceivePageController();
     _listenForUserActiveChanges();
     _loadProfile();
@@ -48,7 +46,6 @@ class _AppTabShellState extends State<AppTabShell> {
   void dispose() {
     _userActiveSubscription?.cancel();
     _receivePageController.dispose();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -95,9 +92,6 @@ class _AppTabShellState extends State<AppTabShell> {
 
     final entries = _entriesFor(profile);
     final initialPosition = _positionForRoute(widget.initialRoute, entries);
-
-    _pageController.dispose();
-    _pageController = PageController(initialPage: initialPosition);
 
     setState(() {
       _profile = profile;
@@ -156,11 +150,6 @@ class _AppTabShellState extends State<AppTabShell> {
     if (position == _currentPosition) return;
 
     setState(() => _currentPosition = position);
-    _pageController.animateToPage(
-      position,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   void _switchToRoute(String route) {
@@ -169,11 +158,6 @@ class _AppTabShellState extends State<AppTabShell> {
     if (position == _currentPosition) return;
 
     setState(() => _currentPosition = position);
-    _pageController.animateToPage(
-      position,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   void _openPendingInvoice(PendingInvoice invoice) {
@@ -272,10 +256,10 @@ class _AppTabShellState extends State<AppTabShell> {
                     thickness: 1,
                     color: Color(0xFF3E444A),
                   ),
-                  Expanded(child: _buildPageView(pages)),
+                  Expanded(child: _buildSelectedPage(pages)),
                 ],
               )
-            : _buildPageView(pages),
+            : _buildSelectedPage(pages),
         bottomNavigationBar: AppBottomNavigationSurface(
           activeIndex: activeIndex,
           isOwner: _profile?.isOwner == true,
@@ -285,14 +269,8 @@ class _AppTabShellState extends State<AppTabShell> {
     );
   }
 
-  Widget _buildPageView(List<Widget> pages) {
-    return PageView(
-      controller: _pageController,
-      onPageChanged: (index) {
-        setState(() => _currentPosition = index);
-      },
-      children: pages,
-    );
+  Widget _buildSelectedPage(List<Widget> pages) {
+    return IndexedStack(index: _currentPosition, children: pages);
   }
 
   Widget _pageForEntry(AppNavEntry entry) {

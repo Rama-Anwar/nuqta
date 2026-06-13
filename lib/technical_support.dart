@@ -66,35 +66,17 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
             children: [
               Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1040),
-                  child: isDesktop
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 4,
-                              child: Column(
-                                children: [
-                                  _buildIntroCard(l10n),
-                                  const SizedBox(height: 16),
-                                  _buildIssueSelector(l10n),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(flex: 5, child: _buildMessageCard(l10n)),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildIntroCard(l10n),
-                            const SizedBox(height: 16),
-                            _buildIssueSelector(l10n),
-                            const SizedBox(height: 16),
-                            _buildMessageCard(l10n),
-                          ],
-                        ),
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildIntroCard(l10n),
+                      const SizedBox(height: 16),
+                      _buildIssueSelector(l10n),
+                      const SizedBox(height: 16),
+                      _buildMessageCard(l10n),
+                    ],
+                  ),
                 ),
               ),
             ],

@@ -167,14 +167,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   Expanded(
                                     child: Column(
                                       children: [
-                                        _buildBusinessCard(l10n),
                                         if (isOwner) ...[
-                                          const SizedBox(height: 16),
                                           _buildSectionCard(
                                             title: l10n.plan,
                                             child: _buildPlanSection(l10n),
                                           ),
+                                          const SizedBox(height: 16),
                                         ],
+                                        _buildToolsCard(l10n, isOwner),
+                                        const SizedBox(height: 16),
+                                        _buildSectionCard(
+                                          title: l10n.settings,
+                                          child: _buildLanguageRow(l10n),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -182,12 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   Expanded(
                                     child: Column(
                                       children: [
-                                        _buildToolsCard(l10n, isOwner),
-                                        const SizedBox(height: 16),
-                                        _buildSectionCard(
-                                          title: l10n.settings,
-                                          child: _buildLanguageRow(l10n),
-                                        ),
+                                        _buildBusinessCard(l10n),
                                         const SizedBox(height: 16),
                                         _buildSectionCard(
                                           title: l10n.account,
@@ -229,8 +229,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (isOwner && profile != null)
                   PositionedDirectional(
                     end: isDesktop ? 32 : 20,
+                    bottom: isDesktop ? 32 : null,
                     top: isDesktop
-                        ? 32
+                        ? null
                         : MediaQuery.of(context).size.height * 0.58,
                     child: _buildAiAssistantFloatingButton(),
                   ),
