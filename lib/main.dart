@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:invoice_ai/firebase_options.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
+import 'package:invoice_ai/noti.dart';
 import 'package:invoice_ai/providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -31,6 +32,7 @@ class MyApp extends StatelessWidget {
     final localeProvider = context.watch<LocaleProvider>();
 
     return MaterialApp(
+      navigatorKey: NotificationService.navigatorKey,
       locale: localeProvider.locale,
 
       localizationsDelegates: const [
@@ -76,7 +78,13 @@ class MyApp extends StatelessWidget {
       localeProvider.loadLocale(),
     ]);
 
-    return FirebaseAuth.instance.currentUser != null
+    final hasCurrentUser = FirebaseAuth.instance.currentUser != null;
+    if (hasCurrentUser) {
+      await NotificationService.initialize();
+      NotificationService.listenForTokenRefresh();
+    }
+
+    return hasCurrentUser
         ? const AppTabShell(initialRoute: AppRoutes.dash)
         : const LoginPage();
   }
