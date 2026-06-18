@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:invoice_ai/helper/get_current_user_profile.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
+import 'package:invoice_ai/noti.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'nav.dart';
@@ -48,6 +49,8 @@ class _LoginPageState extends State<LoginPage> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_login_at', DateTime.now().toIso8601String());
       final profile = await getCurrentUserProfile();
+      await NotificationService.initialize();
+      NotificationService.listenForTokenRefresh();
 
       if (!mounted) return;
 
