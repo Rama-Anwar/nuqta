@@ -145,13 +145,14 @@ class PendingInvoicesService {
     return snapshot.docs.single.reference;
   }
 
-  /// Real-time stream of invoices with status == "pending_review".
+  /// Real-time stream of invoices with status == "pending_review" or "in_progress".
+  /// Includes both statuses so invoices remain accessible even while being edited.
   Stream<List<PendingInvoice>> pendingStream() async* {
     final organizationId = await _currentOrganizationId();
 
     yield* _col
         .where('organization_id', isEqualTo: organizationId)
-        .where('status', isEqualTo: 'pending_review')
+        .where('status', whereIn: ['pending_review', 'in_progress'])
         .snapshots()
         .map(
           (snap) => snap.docs.map((d) => PendingInvoice.fromDoc(d)).toList(),
