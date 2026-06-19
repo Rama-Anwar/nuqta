@@ -51,7 +51,7 @@ class _DashPageState extends State<DashPage> {
         title: Text(
           l10n.dashboard,
           style: GoogleFonts.montserrat(
-            color: Colors.white,
+            color: AppColors.textMain,
             fontWeight: FontWeight.w700,
             fontSize: 20,
           ),
@@ -76,9 +76,7 @@ class _DashPageState extends State<DashPage> {
           }
 
           if (!snapshot.hasData) {
-            return Center(
-              child: CircularProgressIndicator(color: AppColors.accent),
-            );
+            return _buildLoadingState();
           }
 
           return _buildDashboard(snapshot.data!, l10n);
@@ -95,105 +93,8 @@ class _DashPageState extends State<DashPage> {
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= 1024;
         final content = <Widget>[
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 164,
-                    child: _buildInteractiveKPI(
-                      title: l10n.dashboardTotalProfit,
-                      value: _currency(profitStats.totalProfit),
-                      selectedPeriod: selectedRevenuePeriod,
-                      l10n: l10n,
-                      onPeriodChanged: (p) =>
-                          setState(() => selectedRevenuePeriod = p),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 164,
-                    child: _buildInteractiveKPI(
-                      title: l10n.dashboardPaidSales,
-                      value: _currency(salesStats.paidTotal),
-                      selectedPeriod: selectedSalesPeriod,
-                      l10n: l10n,
-                      onPeriodChanged: (p) =>
-                          setState(() => selectedSalesPeriod = p),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 164,
-                    child: _buildSimpleStatCard(
-                      l10n.dashboardAverageInvoice,
-                      _currency(profitStats.averageInvoice),
-                      null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 164,
-                    child: _buildSimpleStatCard(
-                      l10n.dashboardCustomers,
-                      profitStats.customerCount.toString(),
-                      null,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildInteractiveKPI(
-              title: l10n.dashboardTotalProfit,
-              value: _currency(profitStats.totalProfit),
-              selectedPeriod: selectedRevenuePeriod,
-              l10n: l10n,
-              onPeriodChanged: (p) => setState(() => selectedRevenuePeriod = p),
-            ),
-            const SizedBox(height: 16),
-            _buildInteractiveKPI(
-              title: l10n.dashboardPaidSales,
-              value: _currency(salesStats.paidTotal),
-              selectedPeriod: selectedSalesPeriod,
-              l10n: l10n,
-              onPeriodChanged: (p) => setState(() => selectedSalesPeriod = p),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 120,
-                    child: _buildSimpleStatCard(
-                      l10n.dashboardAverageInvoice,
-                      _currency(profitStats.averageInvoice),
-                      null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 120,
-                    child: _buildSimpleStatCard(
-                      l10n.dashboardCustomers,
-                      profitStats.customerCount.toString(),
-                      null,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 24),
+          _buildKpiGrid(profitStats, salesStats, l10n),
+          SizedBox(height: isDesktop ? 28 : 24),
           _buildSectionHeader(
             l10n.dashboardRevenueVsExpenses,
             l10n.dashboardMonthlyPerformance,
@@ -207,9 +108,12 @@ class _DashPageState extends State<DashPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _buildProductSwitcherCard(data, l10n)),
+                    Expanded(
+                      flex: 6,
+                      child: _buildProductSwitcherCard(data, l10n),
+                    ),
                     const SizedBox(width: 24),
-                    Expanded(child: _buildCustomerList(data, l10n)),
+                    Expanded(flex: 5, child: _buildCustomerList(data, l10n)),
                   ],
                 ),
               ],
@@ -224,15 +128,79 @@ class _DashPageState extends State<DashPage> {
         ];
 
         return ListView(
-          padding: EdgeInsets.fromLTRB(16, isDesktop ? 20 : 8, 16, 40),
+          padding: EdgeInsets.fromLTRB(16, isDesktop ? 24 : 12, 16, 44),
           children: [
             Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1280),
+                constraints: const BoxConstraints(maxWidth: 1200),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: content,
                 ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildKpiGrid(
+    DashboardPeriodStats profitStats,
+    DashboardPeriodStats salesStats,
+    AppLocalizations l10n,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final isDesktop = width >= 1024;
+        final isTablet = width >= 620;
+        final spacing = isDesktop ? 16.0 : 14.0;
+        final tileWidth = isDesktop
+            ? (width - spacing * 3) / 4
+            : isTablet
+            ? (width - spacing) / 2
+            : width;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            SizedBox(
+              width: tileWidth,
+              child: _buildInteractiveKPI(
+                title: l10n.dashboardTotalProfit,
+                value: _currency(profitStats.totalProfit),
+                selectedPeriod: selectedRevenuePeriod,
+                l10n: l10n,
+                onPeriodChanged: (p) =>
+                    setState(() => selectedRevenuePeriod = p),
+              ),
+            ),
+            SizedBox(
+              width: tileWidth,
+              child: _buildInteractiveKPI(
+                title: l10n.dashboardPaidSales,
+                value: _currency(salesStats.paidTotal),
+                selectedPeriod: selectedSalesPeriod,
+                l10n: l10n,
+                onPeriodChanged: (p) => setState(() => selectedSalesPeriod = p),
+              ),
+            ),
+            SizedBox(
+              width: tileWidth,
+              child: _buildSimpleStatCard(
+                l10n.dashboardAverageInvoice,
+                _currency(profitStats.averageInvoice),
+                null,
+              ),
+            ),
+            SizedBox(
+              width: tileWidth,
+              child: _buildSimpleStatCard(
+                l10n.dashboardCustomers,
+                profitStats.customerCount.toString(),
+                null,
               ),
             ),
           ],
@@ -249,65 +217,72 @@ class _DashPageState extends State<DashPage> {
     required Function(String) onPeriodChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.borderLowContrast.withValues(alpha: 0.35),
-        ),
-      ),
+      constraints: const BoxConstraints(minHeight: 168),
+      padding: const EdgeInsets.all(18),
+      decoration: _surfaceDecoration(color: AppColors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.textDim,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textDim,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.7,
+                    height: 1.25,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.montserrat(
-              color: AppColors.textMain,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 20),
+          _buildMetricValue(value, fontSize: 22),
+          const SizedBox(height: 22),
           Row(
             children: ['TODAY', 'WEEK', 'MONTH', 'YEAR'].map((period) {
               final isSelected = selectedPeriod == period;
               return Expanded(
-                child: GestureDetector(
-                  onTap: () => onPeriodChanged(period),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeInOut,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.accent
-                          : AppColors.surfaceContainer,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Center(
-                      child: Text(
-                        _periodLabel(period, l10n),
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textDim,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Material(
+                    color: isSelected
+                        ? AppColors.accent
+                        : AppColors.surfaceContainer,
+                    borderRadius: BorderRadius.circular(7),
+                    child: InkWell(
+                      onTap: () => onPeriodChanged(period),
+                      borderRadius: BorderRadius.circular(7),
+                      child: Container(
+                        height: 34,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.accent
+                                : AppColors.borderLowContrast.withValues(
+                                    alpha: 0.38,
+                                  ),
+                          ),
+                        ),
+                        child: Text(
+                          _periodLabel(period, l10n),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.textDim,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
@@ -323,40 +298,32 @@ class _DashPageState extends State<DashPage> {
 
   Widget _buildSimpleStatCard(String label, String val, String? sub) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.borderLowContrast.withValues(alpha: 0.35),
-        ),
-      ),
+      constraints: const BoxConstraints(minHeight: 168),
+      padding: const EdgeInsets.all(18),
+      decoration: _surfaceDecoration(color: AppColors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textDim,
               fontSize: 10,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+              height: 1.25,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            val,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              color: AppColors.textMain,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          const SizedBox(height: 34),
+          _buildMetricValue(val, fontSize: 21),
           if (sub != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               sub,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: AppColors.success,
                 fontSize: 10,
@@ -369,23 +336,60 @@ class _DashPageState extends State<DashPage> {
     );
   }
 
-  Widget _buildSectionHeader(String title, String sub) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.montserrat(
-            color: AppColors.textMain,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+  Widget _buildMetricValue(String value, {required double fontSize}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: GoogleFonts.montserrat(
+                color: AppColors.textMain,
+                fontSize: fontSize,
+                fontWeight: FontWeight.w800,
+                height: 1.1,
+              ),
+            ),
           ),
-        ),
-        Text(
-          sub,
-          style: const TextStyle(color: AppColors.textDim, fontSize: 12),
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionHeader(String title, String sub) {
+    return Container(
+      padding: const EdgeInsetsDirectional.only(start: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.montserrat(
+              color: AppColors.textMain,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            sub,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textDim,
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -394,130 +398,144 @@ class _DashPageState extends State<DashPage> {
     final maxY = data.chartMaxY;
     final interval = maxY <= 100 ? 20.0 : (maxY / 5).ceilToDouble();
 
-    return Container(
-      height: 340,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildLegend(l10n.dashboardRevenue, AppColors.accent),
-                const SizedBox(width: 14),
-                _buildLegend(l10n.dashboardExpenses, AppColors.error),
-              ],
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 520;
+
+        return Container(
+          height: isCompact ? 320 : 350,
+          padding: EdgeInsets.fromLTRB(
+            isCompact ? 14 : 20,
+            18,
+            isCompact ? 14 : 20,
+            18,
           ),
-          const SizedBox(height: 18),
-          Expanded(
-            child: BarChart(
-              BarChartData(
-                barTouchData: BarTouchData(
-                  enabled: true,
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final label = rodIndex == 0
-                          ? l10n.dashboardRevenue
-                          : l10n.dashboardExpenses;
-                      return BarTooltipItem(
-                        '$label\n${_currency(rod.toY)}',
-                        const TextStyle(
-                          color: AppColors.textMain,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      );
-                    },
-                  ),
+          decoration: _surfaceDecoration(
+            color: AppColors.surface,
+            borderAlpha: 0.52,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Wrap(
+                  spacing: 14,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    _buildLegend(l10n.dashboardRevenue, AppColors.accent),
+                    _buildLegend(l10n.dashboardExpenses, AppColors.error),
+                  ],
                 ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 26,
-                      getTitlesWidget: (value, meta) {
-                        final index = value.toInt();
-                        if (index < 0 || index >= points.length) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            _localizedMonthLabel(points[index].label, l10n),
+              ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: BarChart(
+                  BarChartData(
+                    barTouchData: BarTouchData(
+                      enabled: true,
+                      touchTooltipData: BarTouchTooltipData(
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          final label = rodIndex == 0
+                              ? l10n.dashboardRevenue
+                              : l10n.dashboardExpenses;
+                          return BarTooltipItem(
+                            '$label\n${_currency(rod.toY)}',
+                            const TextStyle(
+                              color: AppColors.textMain,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 28,
+                          getTitlesWidget: (value, meta) {
+                            final index = value.toInt();
+                            if (index < 0 || index >= points.length) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                _localizedMonthLabel(points[index].label, l10n),
+                                style: const TextStyle(
+                                  color: AppColors.textDim,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: interval,
+                          reservedSize: isCompact ? 36 : 42,
+                          getTitlesWidget: (value, meta) => Text(
+                            _compactNumber(value),
                             style: const TextStyle(
                               color: AppColors.textDim,
                               fontSize: 10,
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: interval,
-                      reservedSize: 42,
-                      getTitlesWidget: (value, meta) => Text(
-                        _compactNumber(value),
-                        style: const TextStyle(
-                          color: AppColors.textDim,
-                          fontSize: 10,
                         ),
                       ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                     ),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: interval,
+                      getDrawingHorizontalLine: (value) => FlLine(
+                        color: AppColors.borderLowContrast.withValues(
+                          alpha: 0.24,
+                        ),
+                        strokeWidth: 1,
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    barGroups: List.generate(points.length, (index) {
+                      return BarChartGroupData(
+                        x: index,
+                        barsSpace: isCompact ? 3 : 4,
+                        barRods: [
+                          BarChartRodData(
+                            toY: points[index].revenue,
+                            color: AppColors.accent,
+                            width: isCompact ? 8 : 10,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          BarChartRodData(
+                            toY: points[index].expenses,
+                            color: AppColors.error,
+                            width: isCompact ? 8 : 10,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ],
+                      );
+                    }),
+                    maxY: maxY,
                   ),
                 ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: interval,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.borderLowContrast.withValues(alpha: 0.24),
-                    strokeWidth: 1,
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                barGroups: List.generate(points.length, (index) {
-                  return BarChartGroupData(
-                    x: index,
-                    barsSpace: 4,
-                    barRods: [
-                      BarChartRodData(
-                        toY: points[index].revenue,
-                        color: AppColors.accent,
-                        width: 10,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      BarChartRodData(
-                        toY: points[index].expenses,
-                        color: AppColors.error,
-                        width: 10,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ],
-                  );
-                }),
-                maxY: maxY,
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -530,67 +548,77 @@ class _DashPageState extends State<DashPage> {
         : data.leastProducts;
 
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.borderLowContrast.withValues(alpha: 0.35),
-        ),
-      ),
+      padding: const EdgeInsets.all(18),
+      decoration: _surfaceDecoration(color: AppColors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
             children: [
-              Expanded(
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
                 child: Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textDim,
                     fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                    height: 1.25,
                   ),
                 ),
               ),
-              const SizedBox(width: 2),
-              Flexible(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.end,
-                  children: ['BEST', 'LEAST'].map((mode) {
-                    final isSelected = selectedProductTab == mode;
-                    return GestureDetector(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                children: ['BEST', 'LEAST'].map((mode) {
+                  final isSelected = selectedProductTab == mode;
+                  return Material(
+                    color: isSelected
+                        ? AppColors.accent
+                        : AppColors.surfaceContainer,
+                    borderRadius: BorderRadius.circular(7),
+                    child: InkWell(
                       onTap: () => setState(() => selectedProductTab = mode),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeInOut,
+                      borderRadius: BorderRadius.circular(7),
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.accent
-                              : AppColors.surfaceContainer,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.accent
+                                : AppColors.borderLowContrast.withValues(
+                                    alpha: 0.38,
+                                  ),
+                          ),
                         ),
                         child: Text(
                           _productTabLabel(mode, l10n),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: isSelected
                                 ? Colors.white
                                 : AppColors.textDim,
                             fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
+                    ),
+                  );
+                }).toList(),
               ),
             ],
           ),
@@ -607,10 +635,11 @@ class _DashPageState extends State<DashPage> {
   Widget _buildProductRow(DashboardProduct product, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.all(14),
+      decoration: _surfaceDecoration(
         color: AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(4),
+        radius: 10,
+        borderAlpha: 0.34,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,14 +650,19 @@ class _DashPageState extends State<DashPage> {
               children: [
                 Text(
                   product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textMain,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   l10n.dashboardInvoiceLineItem,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textDim,
                     fontSize: 10,
@@ -638,22 +672,34 @@ class _DashPageState extends State<DashPage> {
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _currency(product.revenue),
-                style: const TextStyle(
-                  color: AppColors.accent,
-                  fontWeight: FontWeight.w800,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 132),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _currency(product.revenue),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.dashboardUnits(product.units),
-                style: const TextStyle(color: AppColors.textDim, fontSize: 10),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  l10n.dashboardUnits(product.units),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    color: AppColors.textDim,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -664,26 +710,24 @@ class _DashPageState extends State<DashPage> {
     final customers = data.topCustomers.take(4).toList();
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.borderLowContrast.withValues(alpha: 0.35),
-        ),
-      ),
+      padding: const EdgeInsets.all(18),
+      decoration: _surfaceDecoration(color: AppColors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             l10n.dashboardTopCustomersByValue,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textDim,
               fontSize: 12,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
+              height: 1.25,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           if (customers.isEmpty)
             _buildEmptyInline(l10n.dashboardNoCustomers)
           else
@@ -695,16 +739,17 @@ class _DashPageState extends State<DashPage> {
 
   Widget _buildCustomerRow(DashboardCustomer customer, AppLocalizations l10n) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.borderLowContrast.withValues(alpha: 0.35),
-          ),
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.borderLowContrast.withValues(alpha: 0.34),
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
@@ -712,14 +757,19 @@ class _DashPageState extends State<DashPage> {
               children: [
                 Text(
                   customer.name,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textMain,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   l10n.dashboardInvoicesCount(customer.invoiceCount),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textDim,
                     fontSize: 11,
@@ -729,11 +779,17 @@ class _DashPageState extends State<DashPage> {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            _currency(customer.spent),
-            style: const TextStyle(
-              color: AppColors.accent,
-              fontWeight: FontWeight.bold,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 132),
+            child: Text(
+              _currency(customer.spent),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: AppColors.accent,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -743,6 +799,7 @@ class _DashPageState extends State<DashPage> {
 
   Widget _buildLegend(String label, Color color) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 8,
@@ -752,10 +809,12 @@ class _DashPageState extends State<DashPage> {
         const SizedBox(width: 6),
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: AppColors.textDim,
             fontSize: 10,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -766,19 +825,111 @@ class _DashPageState extends State<DashPage> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textDim),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.all(18),
+          decoration: _surfaceDecoration(color: AppColors.surface),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                color: AppColors.error.withValues(alpha: 0.9),
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  message,
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(color: AppColors.textDim, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 44),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: const [
+                  _LoadingBlock(width: 288, height: 168),
+                  _LoadingBlock(width: 288, height: 168),
+                  _LoadingBlock(width: 288, height: 168),
+                  _LoadingBlock(width: 288, height: 168),
+                ],
+              ),
+              const SizedBox(height: 28),
+              const _LoadingBlock(height: 350),
+              const SizedBox(height: 24),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth < 760) {
+                    return const Column(
+                      children: [
+                        _LoadingBlock(height: 260),
+                        SizedBox(height: 24),
+                        _LoadingBlock(height: 260),
+                      ],
+                    );
+                  }
+
+                  return const Row(
+                    children: [
+                      Expanded(child: _LoadingBlock(height: 260)),
+                      SizedBox(width: 24),
+                      Expanded(child: _LoadingBlock(height: 260)),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildEmptyInline(String message) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(message, style: const TextStyle(color: AppColors.textDim)),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: _surfaceDecoration(
+        color: AppColors.surfaceContainer,
+        radius: 10,
+        borderAlpha: 0.35,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.insights_rounded,
+            size: 18,
+            color: AppColors.textDim.withValues(alpha: 0.75),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.textDim, height: 1.35),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -862,5 +1013,41 @@ class _DashPageState extends State<DashPage> {
     if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M';
     if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}K';
     return value.toStringAsFixed(0);
+  }
+
+  BoxDecoration _surfaceDecoration({
+    Color color = AppColors.surfaceContainer,
+    double radius = 14,
+    double borderAlpha = 0.72,
+  }) {
+    return BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: AppColors.borderLowContrast.withValues(alpha: borderAlpha),
+      ),
+    );
+  }
+}
+
+class _LoadingBlock extends StatelessWidget {
+  final double? width;
+  final double height;
+
+  const _LoadingBlock({this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.borderLowContrast.withValues(alpha: 0.36),
+        ),
+      ),
+    );
   }
 }
