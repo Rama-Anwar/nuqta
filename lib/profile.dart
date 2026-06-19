@@ -112,6 +112,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
     final isOwner = profile?.isOwner == true;
     final isDesktop = MediaQuery.sizeOf(context).width >= 1024;
+    final safeBottom = MediaQuery.viewPaddingOf(context).bottom;
+    final mobileContentBottomPadding = 168.0 + safeBottom;
+    final mobileFabBottom = 96.0 + safeBottom;
+
     return Scaffold(
       backgroundColor: AppColors.primaryBg,
       appBar: AppBar(
@@ -141,7 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildProfileLoadingState()
           : Stack(
               children: [
                 ListView(
@@ -149,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     20,
                     24,
                     20,
-                    isDesktop ? 40 : 112,
+                    isDesktop ? 40 : mobileContentBottomPadding,
                   ),
                   children: [
                     Center(
@@ -229,10 +233,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (isOwner && profile != null)
                   PositionedDirectional(
                     end: isDesktop ? 32 : 20,
-                    bottom: isDesktop ? 32 : null,
-                    top: isDesktop
-                        ? null
-                        : MediaQuery.of(context).size.height * 0.58,
+                    bottom: isDesktop ? 32 : mobileFabBottom,
                     child: _buildAiAssistantFloatingButton(),
                   ),
               ],
@@ -322,6 +323,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildProfileLoadingState() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: _surfaceDecoration(),
+        child: const SizedBox(
+          width: 26,
+          height: 26,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.6,
+            color: AppColors.accent,
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openInventorySheet(AppLocalizations l10n) async {
     final sheetUrl = priceSheetUrl?.trim();
     debugPrint('Inventory Sheet URL: $sheetUrl');
@@ -367,57 +385,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader(AppLocalizations l10n) {
-    return Row(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderLowContrast),
-          ),
-          child: const Icon(Icons.business, size: 34, color: AppColors.accent),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                profile?.name ?? l10n.unknownBusiness,
-                style: GoogleFonts.montserrat(
-                  color: AppColors.textMain,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w800,
-                ),
+    final businessAddress = profile?.address.trim() ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: _surfaceDecoration(radius: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.3),
               ),
-              const SizedBox(height: 6),
-              Text(
-                profile?.address ?? '',
-                style: GoogleFonts.inter(
-                  color: AppColors.textDim,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+            ),
+            child: const Icon(
+              Icons.business,
+              size: 30,
+              color: AppColors.accent,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  profile?.name ?? l10n.unknownBusiness,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.montserrat(
+                    color: AppColors.textMain,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
+                ),
+                if (businessAddress.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 16,
+                        color: AppColors.textDim.withValues(alpha: 0.78),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          businessAddress,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: AppColors.textDim,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.borderLowContrast.withValues(alpha: 0.85),
-        ),
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 10),
+      decoration: _surfaceDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -427,10 +473,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.textDim,
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
+              letterSpacing: 0.8,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           child,
         ],
       ),
@@ -455,6 +501,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     color: AppColors.textDim,
                     fontSize: 12,
@@ -464,6 +512,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 5),
                 Text(
                   value,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     color: AppColors.textMain,
                     fontSize: 14,
@@ -547,11 +597,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 13),
         child: Row(
           children: [
             _buildRowIcon(icon),
@@ -562,6 +614,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Text(
                     title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       color: AppColors.textMain,
                       fontSize: 14,
@@ -571,6 +625,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       color: AppColors.textDim,
                       fontSize: 12,
@@ -580,7 +636,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textDim),
+            Icon(
+              isRtl ? Icons.chevron_left : Icons.chevron_right,
+              color: AppColors.textDim.withValues(alpha: 0.72),
+              size: 22,
+            ),
           ],
         ),
       ),
@@ -590,23 +650,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildLanguageRow(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          _buildRowIcon(Icons.language),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              l10n.language,
-              style: GoogleFonts.inter(
-                color: AppColors.textMain,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 360;
+
+          final labelRow = Row(
+            children: [
+              _buildRowIcon(Icons.language),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  l10n.language,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: AppColors.textMain,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          _buildLanguageSelector(l10n),
-        ],
+            ],
+          );
+
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                labelRow,
+                const SizedBox(height: 12),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: _buildLanguageSelector(l10n),
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: labelRow),
+              const SizedBox(width: 12),
+              _buildLanguageSelector(l10n),
+            ],
+          );
+        },
       ),
     );
   }
@@ -615,9 +703,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainer,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderLowContrast),
+        border: Border.all(
+          color: AppColors.borderLowContrast.withValues(alpha: 0.72),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -785,8 +875,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.borderLowContrast.withValues(alpha: 0.45),
+        ),
       ),
-      child: Icon(icon, color: AppColors.textDim, size: 21),
+      child: Icon(
+        icon,
+        color: AppColors.textDim.withValues(alpha: 0.9),
+        size: 21,
+      ),
     );
   }
 
@@ -810,10 +907,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDivider() {
-    return const Divider(
+    return Divider(
       height: 1,
-      color: AppColors.borderLowContrast,
+      color: AppColors.borderLowContrast.withValues(alpha: 0.62),
       indent: 54,
+    );
+  }
+
+  BoxDecoration _surfaceDecoration({
+    Color color = AppColors.surfaceContainer,
+    double radius = 14,
+    double borderAlpha = 0.72,
+  }) {
+    return BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: AppColors.borderLowContrast.withValues(alpha: borderAlpha),
+      ),
     );
   }
 }

@@ -99,11 +99,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
       background: const SizedBox.shrink(),
       secondaryBackground: Container(
         margin: const EdgeInsets.only(bottom: 16),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 28),
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsetsDirectional.only(end: 28),
         decoration: BoxDecoration(
           color: AppColors.errorMuted,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white, size: 28),
       ),
@@ -142,36 +142,47 @@ class _InvoicesPageState extends State<InvoicesPage> {
     AppLocalizations l10n,
   ) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLowContrast),
-      ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          SizedBox(
-            width: 150,
-            child: _buildDropdown(
-              l10n.year,
-              selectedYear,
-              _availableYears(invoices),
-              l10n,
-            ),
-          ),
-          SizedBox(
-            width: 150,
-            child: _buildDropdown(
-              l10n.month,
-              selectedMonth,
-              _availableMonths(l10n),
-              l10n,
-            ),
-          ),
-          _buildAllToggle(l10n),
-        ],
+      padding: const EdgeInsets.all(14),
+      decoration: _surfaceDecoration(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 420;
+          final fieldWidth = isNarrow
+              ? constraints.maxWidth
+              : constraints.maxWidth >= 760
+              ? 176.0
+              : (constraints.maxWidth - 12) / 2;
+
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.end,
+            children: [
+              SizedBox(
+                width: fieldWidth,
+                child: _buildDropdown(
+                  l10n.year,
+                  selectedYear,
+                  _availableYears(invoices),
+                  l10n,
+                ),
+              ),
+              SizedBox(
+                width: fieldWidth,
+                child: _buildDropdown(
+                  l10n.month,
+                  selectedMonth,
+                  _availableMonths(l10n),
+                  l10n,
+                ),
+              ),
+              SizedBox(
+                width: isNarrow ? constraints.maxWidth : null,
+                child: _buildAllToggle(l10n),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -273,15 +284,14 @@ class _InvoicesPageState extends State<InvoicesPage> {
             stream: ReceiptStore.instance.receiptsStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return _buildLedgerLoadingState();
               }
 
               if (snapshot.hasError) {
-                return Center(
-                  child: Text(
-                    l10n.somethingWrong,
-                    style: GoogleFonts.inter(color: Colors.white),
-                  ),
+                return _buildStatusMessage(
+                  l10n.somethingWrong,
+                  Icons.error_outline_rounded,
+                  AppColors.errorMuted,
                 );
               }
 
@@ -310,83 +320,39 @@ class _InvoicesPageState extends State<InvoicesPage> {
                 children: [
                   Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1180),
+                      constraints: const BoxConstraints(maxWidth: 1200),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildFilterSectionWithInvoices(invoices, l10n),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                l10n.invoiceLedger,
-                                style: GoogleFonts.inter(
-                                  color: AppColors.textMuted,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    tooltip: l10n.pickDate,
-                                    onPressed: () async {
-                                      final picked = await showDatePicker(
-                                        context: context,
-                                        initialDate:
-                                            _selectedDate ?? DateTime.now(),
-                                        firstDate: DateTime(2000),
-                                        lastDate: DateTime(2100),
-                                      );
-
-                                      if (picked != null) {
-                                        setState(() {
-                                          _selectedDate = picked;
-                                          selectedYear = picked.year.toString();
-                                          selectedMonth = _monthLabel(
-                                            picked.month,
-                                            l10n,
-                                          );
-                                          isAllSelected = false;
-                                        });
-                                      }
-                                    },
-                                    icon: const Icon(
-                                      Icons.calendar_month_outlined,
-                                      color: AppColors.textMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${visibleInvoices.length} ${l10n.total}',
-                                    style: GoogleFonts.jetBrainsMono(
-                                      color: AppColors.accent,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          const SizedBox(height: 14),
+                          _buildLedgerHeader(
+                            l10n,
+                            visibleInvoices.length,
+                            onPickDate: () => _pickLedgerDate(l10n),
                           ),
                           const SizedBox(height: 12),
-                          ...visibleInvoices.map(
-                            (invoice) => _buildDismissibleCard(
-                              invoice,
-                              l10n,
-                              canDeleteInvoices: isOwner,
-                              canChangeStatus: true,
-                              canViewFinancials: isOwner,
+                          if (visibleInvoices.isEmpty)
+                            _buildEmptyLedgerState(l10n)
+                          else
+                            ...visibleInvoices.map(
+                              (invoice) => _buildDismissibleCard(
+                                invoice,
+                                l10n,
+                                canDeleteInvoices: isOwner,
+                                canChangeStatus: true,
+                                canViewFinancials: isOwner,
+                              ),
                             ),
-                          ),
                           const SizedBox(height: 24),
                           LayoutBuilder(
                             builder: (context, constraints) {
-                              final tileWidth = constraints.maxWidth >= 435
-                                  ? (constraints.maxWidth - 32) / 3
-                                  : constraints.maxWidth >= 290
+                              final tileCount = isOwner ? 3 : 2;
+                              final tileWidth = constraints.maxWidth >= 760
+                                  ? (constraints.maxWidth -
+                                            (16 * (tileCount - 1))) /
+                                        tileCount
+                                  : constraints.maxWidth >= 520
                                   ? (constraints.maxWidth - 16) / 2
                                   : constraints.maxWidth;
 
@@ -459,6 +425,8 @@ class _InvoicesPageState extends State<InvoicesPage> {
       children: [
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
             color: AppColors.textMuted,
             fontSize: 12,
@@ -467,11 +435,13 @@ class _InvoicesPageState extends State<InvoicesPage> {
         ),
         const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
             color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.borderLowContrast),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: AppColors.borderLowContrast.withValues(alpha: 0.72),
+            ),
           ),
           child: DropdownButtonFormField<String>(
             initialValue:
@@ -483,7 +453,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
               style: GoogleFonts.inter(color: AppColors.textMuted),
             ),
             decoration: const InputDecoration.collapsed(hintText: ''),
-            icon: Icon(
+            icon: const Icon(
               Icons.keyboard_arrow_down,
               size: 18,
               color: AppColors.textMuted,
@@ -520,32 +490,41 @@ class _InvoicesPageState extends State<InvoicesPage> {
   }
 
   Widget _buildAllToggle(AppLocalizations l10n) {
-    return GestureDetector(
-      onTap: () => setState(() {
-        isAllSelected = true;
-        selectedYear = null;
-        selectedMonth = null;
-        _selectedDate = null;
-      }),
-      child: Container(
-        margin: const EdgeInsets.only(top: 18),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isAllSelected ? AppColors.accent : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isAllSelected
-                ? AppColors.accent
-                : AppColors.borderLowContrast,
-          ),
-        ),
-        child: Text(
-          l10n.all,
-          style: GoogleFonts.inter(
-            color: isAllSelected ? Colors.white : AppColors.textMuted,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
+    return Padding(
+      padding: const EdgeInsets.only(top: 18),
+      child: Material(
+        color: isAllSelected ? AppColors.accent : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: () => setState(() {
+            isAllSelected = true;
+            selectedYear = null;
+            selectedMonth = null;
+            _selectedDate = null;
+          }),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isAllSelected
+                    ? AppColors.accent
+                    : AppColors.borderLowContrast.withValues(alpha: 0.72),
+              ),
+            ),
+            child: Text(
+              l10n.all,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color: isAllSelected ? Colors.white : AppColors.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
+            ),
           ),
         ),
       ),
@@ -559,109 +538,258 @@ class _InvoicesPageState extends State<InvoicesPage> {
     required bool canViewFinancials,
   }) {
     final costAmount = _invoiceCost(invoice);
+    final statusAccent = invoice.status == InvoiceStatus.paid
+        ? AppColors.successMuted
+        : AppColors.accent;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.borderLowContrast.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.start,
+      decoration: _surfaceDecoration(color: AppColors.surfaceCard),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text(
-                    invoice.invoiceId ?? invoice.id,
-                    style: GoogleFonts.jetBrainsMono(
-                      color: AppColors.accent,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatDate(context, invoice.date),
-                    style: GoogleFonts.inter(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+          PositionedDirectional(
+            start: 0,
+            top: 14,
+            bottom: 14,
+            child: Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: statusAccent,
+                borderRadius: BorderRadius.circular(99),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _currency(invoice.totalAmount),
-                    style: GoogleFonts.montserrat(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(
+                            invoice.invoiceId ?? invoice.id,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.jetBrainsMono(
+                              color: statusAccent,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            formatDate(context, invoice.date),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  if (canViewFinancials) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      '${l10n.costLabel} ${_currency(costAmount)}',
-                      style: GoogleFonts.inter(
-                        color: AppColors.textMuted,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _currency(invoice.totalAmount),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: GoogleFonts.montserrat(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                            ),
+                          ),
+                          if (canViewFinancials) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '${l10n.costLabel} ${_currency(costAmount)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: GoogleFonts.inter(
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 7),
+                          canChangeStatus
+                              ? GestureDetector(
+                                  onTap: () => _toggleStatus(invoice),
+                                  child: _buildStatusPill(
+                                    invoice.status,
+                                    l10n,
+                                    tappable: true,
+                                  ),
+                                )
+                              : _buildStatusPill(invoice.status, l10n),
+                        ],
                       ),
                     ),
                   ],
-                  const SizedBox(height: 6),
-                  canChangeStatus
-                      ? GestureDetector(
-                          onTap: () => _toggleStatus(invoice),
-                          child: _buildStatusPill(
-                            invoice.status,
-                            l10n,
-                            tappable: true,
-                          ),
-                        )
-                      : _buildStatusPill(invoice.status, l10n),
-                ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        invoice.customerName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.montserrat(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: invoice.invoiceId ?? invoice.id,
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.chevron_left
+                            : Icons.chevron_right,
+                        color: AppColors.textMuted.withValues(alpha: 0.78),
+                        size: 20,
+                      ),
+                      onPressed: () => _openDetails(
+                        invoice,
+                        canDeleteInvoices: canViewFinancials,
+                        canChangeStatus: canChangeStatus,
+                        canViewFinancials: canViewFinancials,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickLedgerDate(AppLocalizations l10n) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        selectedYear = picked.year.toString();
+        selectedMonth = _monthLabel(picked.month, l10n);
+        isAllSelected = false;
+      });
+    }
+  }
+
+  Widget _buildLedgerHeader(
+    AppLocalizations l10n,
+    int visibleCount, {
+    required VoidCallback onPickDate,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: _surfaceDecoration(
+        color: AppColors.surfaceContainer,
+        borderAlpha: 0.54,
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.description_outlined,
+                color: AppColors.textMuted.withValues(alpha: 0.82),
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                l10n.invoiceLedger,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Text(
-                  invoice.customerName,
-                  style: GoogleFonts.montserrat(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+              Tooltip(
+                message: l10n.pickDate,
+                child: Material(
+                  color: AppColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(10),
+                  child: InkWell(
+                    onTap: onPickDate,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.borderLowContrast.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.calendar_month_outlined,
+                        color: AppColors.textMuted,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.textMuted,
-                  size: 20,
-                ),
-                onPressed: () => _openDetails(
-                  invoice,
-                  canDeleteInvoices: canViewFinancials,
-                  canChangeStatus: canChangeStatus,
-                  canViewFinancials: canViewFinancials,
+              const SizedBox(width: 10),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 160),
+                child: Text(
+                  '$visibleCount ${l10n.total}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.jetBrainsMono(
+                    color: AppColors.accent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -691,19 +819,27 @@ class _InvoicesPageState extends State<InvoicesPage> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         border: Border.all(
-          color: color.withValues(alpha: tappable ? 0.28 : 0.0),
+          color: color.withValues(alpha: tappable ? 0.34 : 0.18),
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(7),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
               color: color,
               fontSize: 10,
@@ -724,32 +860,34 @@ class _InvoicesPageState extends State<InvoicesPage> {
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLowContrast),
-      ),
+      decoration: _surfaceDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: AppColors.textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.7,
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Icon(icon, color: accentColor.withValues(alpha: 0.35), size: 16),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.montserrat(
               color: accentColor,
               fontSize: 18,
@@ -757,6 +895,130 @@ class _InvoicesPageState extends State<InvoicesPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyLedgerState(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
+      decoration: _surfaceDecoration(),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.receipt_long_rounded,
+              color: AppColors.accent,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            l10n.invoiceLedger,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.noItemsAdded,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: AppColors.textMuted,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusMessage(String message, IconData icon, Color color) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(18),
+        constraints: const BoxConstraints(maxWidth: 420),
+        decoration: _surfaceDecoration(borderAlpha: 0.68),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                message,
+                style: GoogleFonts.inter(
+                  color: AppColors.textPrimary,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLedgerLoadingState() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: _surfaceDecoration(),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: const [
+                    _LoadingBlock(width: 176, height: 58),
+                    _LoadingBlock(width: 176, height: 58),
+                    _LoadingBlock(width: 92, height: 42),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: _surfaceDecoration(borderAlpha: 0.54),
+                child: const Row(
+                  children: [
+                    Expanded(child: _LoadingBlock(height: 18)),
+                    SizedBox(width: 16),
+                    _LoadingBlock(width: 110, height: 18),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const _LoadingBlock(height: 116),
+              const SizedBox(height: 12),
+              const _LoadingBlock(height: 116),
+              const SizedBox(height: 24),
+              const Row(
+                children: [
+                  Expanded(child: _LoadingBlock(height: 82)),
+                  SizedBox(width: 16),
+                  Expanded(child: _LoadingBlock(height: 82)),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -896,6 +1158,42 @@ class _InvoicesPageState extends State<InvoicesPage> {
           canDeleteInvoices: canDeleteInvoices,
           canChangeStatus: canChangeStatus,
           canViewFinancials: canViewFinancials,
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _surfaceDecoration({
+    Color color = AppColors.surfaceContainer,
+    double radius = 14,
+    double borderAlpha = 0.72,
+  }) {
+    return BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: AppColors.borderLowContrast.withValues(alpha: borderAlpha),
+      ),
+    );
+  }
+}
+
+class _LoadingBlock extends StatelessWidget {
+  final double? width;
+  final double height;
+
+  const _LoadingBlock({this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.borderLowContrast.withValues(alpha: 0.36),
         ),
       ),
     );

@@ -669,17 +669,17 @@ class _PendingInvoiceBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppPalette.primaryContainer.withValues(alpha: 0.12),
+        color: AppPalette.surfaceCard,
         border: Border.all(
-          color: AppPalette.primaryContainer.withValues(alpha: 0.35),
+          color: AppPalette.primaryContainer.withValues(alpha: 0.32),
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: AppPalette.primaryContainer.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(10),
@@ -697,6 +697,8 @@ class _PendingInvoiceBanner extends StatelessWidget {
               children: [
                 const Text(
                   'Loaded from Waiting List',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: AppPalette.textPrimary,
                     fontSize: 13,
@@ -707,7 +709,7 @@ class _PendingInvoiceBanner extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     details,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppPalette.textMuted,
@@ -868,12 +870,14 @@ class _DesktopLayout extends StatelessWidget {
                           elevation: 0,
                           minimumSize: const Size.fromHeight(48),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         icon: const Icon(Icons.add, size: 18),
                         label: Text(
                           l10n.addItem,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1,
@@ -998,41 +1002,52 @@ class _MobileLayout extends StatelessWidget {
                 hint: l10n.scanOrTypeItem,
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _LabeledInput(
-                      controller: quantityController,
-                      label: l10n.quantity,
-                      hint: '0',
-                      mono: true,
-                      isNumber: true,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _LabeledInput(
-                      controller: unitPriceController,
-                      label: l10n.price,
-                      hint: '0.00',
-                      mono: true,
-                      isNumber: true,
-                      prefix: '\$ ',
-                    ),
-                  ),
-                  const SizedBox(width: 16),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final availableWidth = constraints.maxWidth;
+                  final fieldWidth = availableWidth < 420
+                      ? availableWidth
+                      : (availableWidth - 16) / 2;
 
-                  Expanded(
-                    child: _LabeledInput(
-                      controller: costPriceController,
-                      label: l10n.cost,
-                      hint: '0.00',
-                      mono: true,
-                      isNumber: true,
-                      prefix: '\$',
-                    ),
-                  ),
-                ],
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      SizedBox(
+                        width: fieldWidth,
+                        child: _LabeledInput(
+                          controller: quantityController,
+                          label: l10n.quantity,
+                          hint: '0',
+                          mono: true,
+                          isNumber: true,
+                        ),
+                      ),
+                      SizedBox(
+                        width: fieldWidth,
+                        child: _LabeledInput(
+                          controller: unitPriceController,
+                          label: l10n.price,
+                          hint: '0.00',
+                          mono: true,
+                          isNumber: true,
+                          prefix: '\$ ',
+                        ),
+                      ),
+                      SizedBox(
+                        width: fieldWidth,
+                        child: _LabeledInput(
+                          controller: costPriceController,
+                          label: l10n.cost,
+                          hint: '0.00',
+                          mono: true,
+                          isNumber: true,
+                          prefix: '\$',
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -1045,12 +1060,14 @@ class _MobileLayout extends StatelessWidget {
                     elevation: 0,
                     minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   icon: const Icon(Icons.add, size: 18),
                   label: Text(
                     l10n.addItem,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1,
@@ -1122,6 +1139,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
       title: l10n.lineItems,
       trailing: Text(
         '${items.length} ${l10n.items}',
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: AppPalette.textMuted,
           fontFamily: 'monospace',
@@ -1133,6 +1151,7 @@ class _ItemsPanelDesktop extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
               color: AppPalette.backgroundScaffold,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
               border: Border(
                 bottom: BorderSide(color: AppPalette.borderLowContrast),
               ),
@@ -1425,9 +1444,18 @@ class _MobileActionBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppPalette.surfaceCard,
-        border: Border(top: BorderSide(color: AppPalette.borderLowContrast)),
+        border: const Border(
+          top: BorderSide(color: AppPalette.borderLowContrast),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 24,
+            offset: const Offset(0, -10),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -1436,24 +1464,35 @@ class _MobileActionBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.totalAmount,
-                  style: TextStyle(
-                    color: AppPalette.textMuted,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
+                Expanded(
+                  child: Text(
+                    l10n.totalAmount,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppPalette.textMuted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
-                Text(
-                  _currency(total, l10n),
-                  style: const TextStyle(
-                    color: AppPalette.textPrimary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'monospace',
+                const SizedBox(width: 12),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      _currency(total, l10n),
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: AppPalette.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1604,25 +1643,46 @@ class _CardShell extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppPalette.surfaceCard,
-        border: Border.all(color: AppPalette.borderLowContrast),
+        border: Border.all(
+          color: AppPalette.borderLowContrast.withValues(alpha: 0.82),
+        ),
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Text(
-                title.toUpperCase(),
-                style: const TextStyle(
-                  color: AppPalette.textMuted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppPalette.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
-              const Spacer(),
-              trailing ?? const SizedBox.shrink(),
+              if (trailing != null) ...[
+                const SizedBox(width: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 180),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: trailing!,
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),
@@ -1659,6 +1719,8 @@ class _LabeledInput extends StatelessWidget {
       children: [
         Text(
           label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: AppPalette.textMuted,
             fontSize: 12,
@@ -1685,27 +1747,30 @@ class _LabeledInput extends StatelessWidget {
               color: AppPalette.surfaceContainerHighest,
             ),
             filled: true,
-            fillColor: AppPalette.backgroundScaffold,
+            fillColor: AppPalette.surfaceContainerHigh,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 14,
             ),
-            border: const UnderlineInputBorder(
-              borderSide: BorderSide(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
                 color: AppPalette.borderLowContrast,
-                width: 2,
+                width: 1.2,
               ),
             ),
-            enabledBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
                 color: AppPalette.borderLowContrast,
-                width: 2,
+                width: 1.2,
               ),
             ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
                 color: AppPalette.primaryContainer,
-                width: 2,
+                width: 1.4,
               ),
             ),
             prefixText: prefix,
@@ -2032,9 +2097,11 @@ class _MobileItemCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppPalette.backgroundScaffold,
-        border: Border.all(color: AppPalette.borderLowContrast),
-        borderRadius: BorderRadius.circular(12),
+        color: AppPalette.surfaceContainerHigh,
+        border: Border.all(
+          color: AppPalette.borderLowContrast.withValues(alpha: 0.72),
+        ),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2081,119 +2148,138 @@ class _MobileItemCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _MobileEditableStatBlock(
-                  label: l10n.qty,
-                  value: line.quantity.toString(),
-                  onChanged: onQtyChanged,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppPalette.surfaceCard,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        l10n.price,
-                        style: TextStyle(
-                          color: AppPalette.textMuted,
-                          fontSize: 11,
-                        ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              final blockWidth = availableWidth < 420
+                  ? availableWidth
+                  : (availableWidth - 24) / 3;
+
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: blockWidth,
+                    child: _MobileEditableStatBlock(
+                      label: l10n.qty,
+                      value: line.quantity.toString(),
+                      onChanged: onQtyChanged,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
-                      const SizedBox(height: 6),
-                      SizedBox(
-                        width: 80,
-                        child: TextFormField(
-                          initialValue: line.unitPrice.toStringAsFixed(2),
-                          onChanged: onPriceChanged,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppPalette.textPrimary,
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.w600,
-                          ),
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            border: InputBorder.none,
-                            isCollapsed: true,
-                            hintText: '0.00',
-                            hintStyle: TextStyle(color: AppPalette.textMuted),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.cost,
-                        style: TextStyle(
-                          color: AppPalette.textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      SizedBox(
-                        width: 80,
-                        child: TextFormField(
-                          initialValue: line.costPrice.toStringAsFixed(2),
-                          onChanged: onCostChanged,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppPalette.textPrimary,
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.w600,
-                          ),
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            border: InputBorder.none,
-                            isCollapsed: true,
-                            hintText: '0.00',
-                            hintStyle: TextStyle(color: AppPalette.textMuted),
-                          ),
-                        ),
-                      ),
-                    ],
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  children: [
-                    Transform.translate(
-                      offset: const Offset(0, -6),
-                      child: _MobileStatBlock(
-                        label: l10n.total,
-                        value: _currency(line.total, l10n),
+                  SizedBox(
+                    width: blockWidth,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppPalette.surfaceCard,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            l10n.price,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppPalette.textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            width: 80,
+                            child: TextFormField(
+                              initialValue: line.unitPrice.toStringAsFixed(2),
+                              onChanged: onPriceChanged,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppPalette.textPrimary,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w600,
+                              ),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                isCollapsed: true,
+                                hintText: '0.00',
+                                hintStyle: TextStyle(
+                                  color: AppPalette.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.cost,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppPalette.textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          SizedBox(
+                            width: 80,
+                            child: TextFormField(
+                              initialValue: line.costPrice.toStringAsFixed(2),
+                              onChanged: onCostChanged,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppPalette.textPrimary,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w600,
+                              ),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                isCollapsed: true,
+                                hintText: '0.00',
+                                hintStyle: TextStyle(
+                                  color: AppPalette.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    _MobileStatBlock(
-                      label: l10n.profit,
-                      value: _currency(line.profit, l10n),
+                  ),
+                  SizedBox(
+                    width: blockWidth,
+                    child: Column(
+                      children: [
+                        _MobileStatBlock(
+                          label: l10n.total,
+                          value: _currency(line.total, l10n),
+                        ),
+                        const SizedBox(height: 8),
+                        _MobileStatBlock(
+                          label: l10n.profit,
+                          value: _currency(line.profit, l10n),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -2224,6 +2310,8 @@ class _MobileEditableStatBlock extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: AppPalette.textMuted, fontSize: 11),
         ),
         const SizedBox(height: 6),
@@ -2266,6 +2354,8 @@ class _MobileStatBlock extends StatelessWidget {
         children: [
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppPalette.textMuted,
               fontSize: 11,
@@ -2276,6 +2366,8 @@ class _MobileStatBlock extends StatelessWidget {
           Text(
             value,
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppPalette.textPrimary,
               fontFamily: 'monospace',
@@ -2297,18 +2389,40 @@ class _EmptyState extends StatelessWidget {
     return Container(
       height: 180,
       alignment: Alignment.center,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: AppPalette.backgroundScaffold,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppPalette.borderLowContrast.withValues(alpha: 0.72),
+        ),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.receipt_long_rounded,
-            size: 44,
-            color: AppPalette.textMuted,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppPalette.primaryContainer.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.receipt_long_rounded,
+              size: 24,
+              color: AppPalette.primaryContainer,
+            ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             l10n.noItemsAdded,
-            style: TextStyle(color: AppPalette.textMuted),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppPalette.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -2330,23 +2444,34 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: bold ? AppPalette.textPrimary : AppPalette.textMuted,
-            fontSize: bold ? 24 : 14,
-            fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: bold ? AppPalette.textPrimary : AppPalette.textMuted,
+              fontSize: bold ? 24 : 14,
+              fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+            ),
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            color: AppPalette.textPrimary,
-            fontSize: bold ? 24 : 14,
-            fontFamily: 'monospace',
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+        const SizedBox(width: 12),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerEnd,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                color: AppPalette.textPrimary,
+                fontSize: bold ? 24 : 14,
+                fontFamily: 'monospace',
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+              ),
+            ),
           ),
         ),
       ],
