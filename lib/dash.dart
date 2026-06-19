@@ -853,52 +853,84 @@ class _DashPageState extends State<DashPage> {
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 44),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: const [
-                  _LoadingBlock(width: 288, height: 168),
-                  _LoadingBlock(width: 288, height: 168),
-                  _LoadingBlock(width: 288, height: 168),
-                  _LoadingBlock(width: 288, height: 168),
-                ],
-              ),
-              const SizedBox(height: 28),
-              const _LoadingBlock(height: 350),
-              const SizedBox(height: 24),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 760) {
-                    return const Column(
-                      children: [
-                        _LoadingBlock(height: 260),
-                        SizedBox(height: 24),
-                        _LoadingBlock(height: 260),
-                      ],
-                    );
-                  }
+    return LayoutBuilder(
+      builder: (context, viewport) {
+        final isDesktop = viewport.maxWidth >= 1024;
+        final isTablet = viewport.maxWidth >= 620;
+        final compactHeight = viewport.maxHeight < 680;
+        final chartHeight = isDesktop
+            ? 350.0
+            : compactHeight
+            ? 220.0
+            : 260.0;
+        final detailHeight = isDesktop
+            ? 260.0
+            : compactHeight
+            ? 150.0
+            : 190.0;
 
-                  return const Row(
-                    children: [
-                      Expanded(child: _LoadingBlock(height: 260)),
-                      SizedBox(width: 24),
-                      Expanded(child: _LoadingBlock(height: 260)),
-                    ],
-                  );
-                },
+        return ListView(
+          padding: EdgeInsets.fromLTRB(16, isDesktop ? 20 : 12, 16, 44),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final spacing = isDesktop ? 16.0 : 14.0;
+                      final kpiWidth = isDesktop
+                          ? (constraints.maxWidth - spacing * 3) / 4
+                          : isTablet
+                          ? (constraints.maxWidth - spacing) / 2
+                          : constraints.maxWidth;
+                      final kpiHeight = isDesktop ? 168.0 : 116.0;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Wrap(
+                            spacing: spacing,
+                            runSpacing: spacing,
+                            children: List.generate(
+                              4,
+                              (_) => SizedBox(
+                                width: kpiWidth,
+                                child: _LoadingBlock(height: kpiHeight),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isDesktop ? 28 : 20),
+                          _LoadingBlock(height: chartHeight),
+                          const SizedBox(height: 24),
+                          if (isDesktop)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _LoadingBlock(height: detailHeight),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  child: _LoadingBlock(height: detailHeight),
+                                ),
+                              ],
+                            )
+                          else ...[
+                            _LoadingBlock(height: detailHeight),
+                            const SizedBox(height: 16),
+                            _LoadingBlock(height: detailHeight),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1031,15 +1063,13 @@ class _DashPageState extends State<DashPage> {
 }
 
 class _LoadingBlock extends StatelessWidget {
-  final double? width;
   final double height;
 
-  const _LoadingBlock({this.width, required this.height});
+  const _LoadingBlock({required this.height});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width,
       height: height,
       decoration: BoxDecoration(
         color: AppColors.surface.withValues(alpha: 0.78),

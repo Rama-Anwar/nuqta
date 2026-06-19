@@ -30,6 +30,7 @@ class _AppTabShellState extends State<AppTabShell> {
   bool _isSubscriptionExpired = false;
   bool _isSigningOut = false;
   int _currentPosition = 0;
+  late final PageController _pageController;
   late final ReceivePageController _receivePageController;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
   _userActiveSubscription;
@@ -37,6 +38,7 @@ class _AppTabShellState extends State<AppTabShell> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _receivePageController = ReceivePageController();
     _listenForUserActiveChanges();
     _loadProfile();
@@ -45,6 +47,7 @@ class _AppTabShellState extends State<AppTabShell> {
   @override
   void dispose() {
     _userActiveSubscription?.cancel();
+    _pageController.dispose();
     _receivePageController.dispose();
     super.dispose();
   }
@@ -99,6 +102,7 @@ class _AppTabShellState extends State<AppTabShell> {
       _currentPosition = initialPosition;
       _isLoadingProfile = false;
     });
+    _syncPageController(jump: true);
 
     if (profileLoadFailed && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -150,6 +154,7 @@ class _AppTabShellState extends State<AppTabShell> {
     if (position == _currentPosition) return;
 
     setState(() => _currentPosition = position);
+    _syncPageController();
   }
 
   void _switchToRoute(String route) {
@@ -158,11 +163,31 @@ class _AppTabShellState extends State<AppTabShell> {
     if (position == _currentPosition) return;
 
     setState(() => _currentPosition = position);
+    _syncPageController();
   }
 
   void _openPendingInvoice(PendingInvoice invoice) {
     _switchToRoute(AppRoutes.receipts);
     _receivePageController.loadPendingInvoice(invoice);
+  }
+
+  void _syncPageController({bool jump = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients) return;
+      final page = _pageController.page?.round();
+      if (page == _currentPosition) return;
+
+      if (jump) {
+        _pageController.jumpToPage(_currentPosition);
+        return;
+      }
+
+      _pageController.animateToPage(
+        _currentPosition,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   @override
@@ -256,10 +281,10 @@ class _AppTabShellState extends State<AppTabShell> {
                     thickness: 1,
                     color: Color(0xFF3E444A),
                   ),
-                  Expanded(child: _buildSelectedPage(pages)),
+                  Expanded(child: _buildDesktopPage(pages)),
                 ],
               )
-            : _buildSelectedPage(pages),
+            : _buildMobilePages(pages),
         bottomNavigationBar: AppBottomNavigationSurface(
           activeIndex: activeIndex,
           isOwner: _profile?.isOwner == true,
@@ -269,8 +294,19 @@ class _AppTabShellState extends State<AppTabShell> {
     );
   }
 
-  Widget _buildSelectedPage(List<Widget> pages) {
+  Widget _buildDesktopPage(List<Widget> pages) {
     return IndexedStack(index: _currentPosition, children: pages);
+  }
+
+  Widget _buildMobilePages(List<Widget> pages) {
+    return PageView(
+      controller: _pageController,
+      onPageChanged: (position) {
+        if (position == _currentPosition) return;
+        setState(() => _currentPosition = position);
+      },
+      children: pages,
+    );
   }
 
   Widget _pageForEntry(AppNavEntry entry) {
