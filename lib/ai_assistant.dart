@@ -145,15 +145,56 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       appBar: AppBar(
         backgroundColor: _background,
         elevation: 0,
-        titleSpacing: 0,
+        titleSpacing: 8,
         iconTheme: const IconThemeData(color: _textMain),
-        title: Text(
-          'Maven',
-          style: GoogleFonts.montserrat(
-            color: _textMain,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: _accent.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _accent.withValues(alpha: 0.28)),
+              ),
+              child: const Icon(
+                Icons.insights_rounded,
+                color: _accent,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 220),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Maven',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(
+                      color: _textMain,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    isArabic ? 'مساعد مالي ذكي' : 'Financial AI assistant',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: _textDim,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           if (messages.isNotEmpty)
@@ -197,13 +238,23 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     BuildContext context,
     List<MavenChatMessage> messages,
   ) {
-    return ListView(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      children: [
-        if (messages.isEmpty) _buildEmptyState(context),
-        for (final message in messages) _buildMessageBubble(message),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 720;
+        return ListView(
+          controller: _scrollController,
+          padding: EdgeInsets.fromLTRB(
+            isWide ? 24 : 16,
+            isWide ? 22 : 14,
+            isWide ? 24 : 16,
+            16,
+          ),
+          children: [
+            if (messages.isEmpty) _buildEmptyState(context),
+            for (final message in messages) _buildMessageBubble(message),
+          ],
+        );
+      },
     );
   }
 
@@ -213,18 +264,29 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _error.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _error.withValues(alpha: 0.38)),
+        color: _error.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _error.withValues(alpha: 0.34)),
       ),
-      child: Text(
-        _signedOutMessage(context),
-        style: GoogleFonts.inter(
-          color: _textMain,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          height: 1.35,
-        ),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          const Icon(Icons.lock_outline_rounded, color: _error, size: 18),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Text(
+              _signedOutMessage(context),
+              style: GoogleFonts.inter(
+                color: _textMain,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -232,36 +294,118 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   Widget _buildEmptyState(BuildContext context) {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-      child: Column(
+    return Align(
+      alignment: AlignmentDirectional.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 680),
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+          decoration: BoxDecoration(
+            color: _surfaceDeep,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border.withValues(alpha: 0.82)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: _accent.withValues(alpha: 0.35)),
+                ),
+                child: const Icon(
+                  Icons.query_stats_rounded,
+                  color: _accent,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Maven',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.montserrat(
+                  color: _textMain,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isArabic
+                    ? 'أهلًا، أنا Maven. اسألني عن المبيعات، الأرباح، الفواتير، العملاء، المنتجات، التدفق النقدي، العملات، الذهب، أو نصائح البزنس.'
+                    : "Hi, I'm Maven. Ask me about sales, profit, invoices, customers, products, cash flow, currencies, gold, or business advice.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: _textDim,
+                  fontSize: 13,
+                  height: 1.45,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildCapabilityPill(
+                    isArabic ? 'الفواتير' : 'Invoices',
+                    Icons.receipt_long_rounded,
+                  ),
+                  _buildCapabilityPill(
+                    isArabic ? 'الأرباح' : 'Profit',
+                    Icons.trending_up_rounded,
+                  ),
+                  _buildCapabilityPill(
+                    isArabic ? 'التدفق النقدي' : 'Cash flow',
+                    Icons.account_balance_wallet_rounded,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCapabilityPill(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _border.withValues(alpha: 0.78)),
+      ),
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-              border: Border.all(color: _accent.withValues(alpha: 0.35)),
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: _accent,
-              size: 30,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            isArabic
-                ? 'أهلًا، أنا Maven. اسألني عن المبيعات، الأرباح، الفواتير، العملاء، المنتجات، التدفق النقدي، العملات، الذهب، أو نصائح البزنس.'
-                : "Hi, I'm Maven. Ask me about sales, profit, invoices, customers, products, cash flow, currencies, gold, or business advice.",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              color: _textDim,
-              fontSize: 13,
-              height: 1.4,
-              fontWeight: FontWeight.w600,
+          Icon(icon, color: _accent, size: 15),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 150),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color: _textMain,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -286,29 +430,81 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         ? _error.withValues(alpha: 0.45)
         : _border;
 
-    return Align(
-      alignment: alignment,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 520),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: bubbleColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor),
-        ),
-        child: Text(
-          message.text,
-          textDirection: isArabicText ? TextDirection.rtl : TextDirection.ltr,
-          textAlign: isArabicText ? TextAlign.right : TextAlign.left,
-          style: GoogleFonts.inter(
-            color: isUser ? Colors.white : _textMain,
-            fontSize: 14,
-            height: 1.45,
-            fontWeight: FontWeight.w500,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxBubbleWidth = constraints.maxWidth < 720
+            ? constraints.maxWidth * 0.9
+            : 640.0;
+
+        return Align(
+          alignment: alignment,
+          child: Container(
+            constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: bubbleColor,
+              borderRadius: BorderRadiusDirectional.only(
+                topStart: const Radius.circular(16),
+                topEnd: const Radius.circular(16),
+                bottomStart: Radius.circular(isUser ? 16 : 6),
+                bottomEnd: Radius.circular(isUser ? 6 : 16),
+              ),
+              border: Border.all(color: borderColor),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: isArabicText
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                if (!isUser)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Icon(
+                          message.isError
+                              ? Icons.error_outline_rounded
+                              : Icons.insights_rounded,
+                          color: message.isError ? _error : _accent,
+                          size: 14,
+                        ),
+                        Text(
+                          message.isError
+                              ? (isArabicText ? 'تنبيه Maven' : 'Maven notice')
+                              : 'Maven',
+                          style: GoogleFonts.inter(
+                            color: message.isError ? _error : _textDim,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Text(
+                  message.text,
+                  textDirection: isArabicText
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
+                  textAlign: isArabicText ? TextAlign.right : TextAlign.left,
+                  softWrap: true,
+                  style: GoogleFonts.inter(
+                    color: isUser ? Colors.white : _textMain,
+                    fontSize: 14,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -324,7 +520,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           decoration: BoxDecoration(
             color: _surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _border),
+            border: Border.all(color: _accent.withValues(alpha: 0.28)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -338,12 +534,17 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                isArabic ? 'جار تجهيز الإجابة...' : 'Preparing an answer...',
-                style: GoogleFonts.inter(
-                  color: _textDim,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 240),
+                child: Text(
+                  isArabic ? 'جار تجهيز الإجابة...' : 'Preparing an answer...',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: _textDim,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -373,34 +574,68 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             'Financial advice',
           ];
 
-    return SizedBox(
-      height: 48,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        itemCount: prompts.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final prompt = prompts[index];
-          return ActionChip(
-            label: Text(prompt),
-            onPressed: enabled ? () => _sendMessage(prompt) : null,
-            backgroundColor: _surface,
-            disabledColor: _surface.withValues(alpha: 0.55),
-            side: BorderSide(color: _border.withValues(alpha: 0.9)),
-            labelStyle: GoogleFonts.inter(
-              color: enabled ? _textMain : _textDim.withValues(alpha: 0.55),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 760;
+        if (isWide) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: _border.withValues(alpha: 0.45)),
+              ),
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+            child: Wrap(
+              alignment: isArabic ? WrapAlignment.end : WrapAlignment.start,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final prompt in prompts)
+                  _buildQuickPromptChip(prompt, enabled: enabled),
+              ],
             ),
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: VisualDensity.compact,
           );
-        },
+        }
+
+        return SizedBox(
+          height: 56,
+          child: Directionality(
+            textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 7, 16, 11),
+              itemCount: prompts.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final prompt = prompts[index];
+                return _buildQuickPromptChip(prompt, enabled: enabled);
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickPromptChip(String prompt, {required bool enabled}) {
+    return ActionChip(
+      label: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: Text(prompt, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
+      onPressed: enabled ? () => _sendMessage(prompt) : null,
+      backgroundColor: _surface,
+      disabledColor: _surface.withValues(alpha: 0.55),
+      side: BorderSide(color: _border.withValues(alpha: 0.9)),
+      labelStyle: GoogleFonts.inter(
+        color: enabled ? _textMain : _textDim.withValues(alpha: 0.55),
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
     );
   }
 
@@ -411,9 +646,16 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _surfaceDeep,
-          border: Border(top: BorderSide(color: _border)),
+          border: const Border(top: BorderSide(color: _border)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.20),
+              blurRadius: 22,
+              offset: const Offset(0, -8),
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -426,6 +668,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 maxLines: 3,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => enabled ? _sendMessage() : null,
+                textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                textAlign: isArabic ? TextAlign.right : TextAlign.left,
                 style: GoogleFonts.inter(color: _textMain, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: enabled
@@ -437,24 +681,24 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                       : 'Sign in to use Maven',
                   hintStyle: GoogleFonts.inter(color: _textDim),
                   filled: true,
-                  fillColor: _background,
+                  fillColor: _surface,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderSide: const BorderSide(color: _border),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: const BorderSide(color: _accent, width: 1.4),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   disabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(
                       color: _border.withValues(alpha: 0.6),
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
@@ -473,7 +717,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: const Icon(Icons.send_rounded, size: 20),
