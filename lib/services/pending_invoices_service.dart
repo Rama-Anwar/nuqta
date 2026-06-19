@@ -165,6 +165,13 @@ class PendingInvoicesService {
     await invoice.update({'status': newStatus});
   }
 
+  /// Delete a pending invoice after verifying it belongs to the current user's
+  /// organization.
+  Future<void> deleteInvoice(String docId) async {
+    final invoice = await _invoiceForCurrentOrganization(docId);
+    await invoice.delete();
+  }
+
   /// Persist all user edits back to the Firestore document **and** set
   /// status to "completed" in a single atomic [update] call.
   ///
