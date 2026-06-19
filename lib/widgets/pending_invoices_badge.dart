@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../helper/get_current_user_profile.dart';
 import '../services/pending_invoices_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,7 +12,7 @@ import '../services/pending_invoices_service.dart';
 ///  • Opens a premium-styled bottom sheet listing those invoices.
 ///  • Calls [onInvoiceSelected] with the chosen [PendingInvoice] so the
 ///    parent screen can populate its state.
-class PendingInvoicesBadgeButton extends StatefulWidget {
+class PendingInvoicesBadgeButton extends StatelessWidget {
   /// Called when the user taps an invoice in the bottom sheet.
   final void Function(PendingInvoice invoice) onInvoiceSelected;
 
@@ -23,57 +22,26 @@ class PendingInvoicesBadgeButton extends StatefulWidget {
   });
 
   @override
-  State<PendingInvoicesBadgeButton> createState() =>
-      _PendingInvoicesBadgeButtonState();
-}
-
-class _PendingInvoicesBadgeButtonState
-    extends State<PendingInvoicesBadgeButton> {
-  late final Future<bool> _canDeletePendingInvoices;
-
-  @override
-  void initState() {
-    super.initState();
-    _canDeletePendingInvoices = _loadCanDeletePendingInvoices();
-  }
-
-  Future<bool> _loadCanDeletePendingInvoices() async {
-    final profile = await getCurrentUserProfile();
-    return profile?.isOwner == true;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _canDeletePendingInvoices,
+    return StreamBuilder<List<PendingInvoice>>(
+      stream: PendingInvoicesService.instance.pendingStream(),
       builder: (context, snapshot) {
-        final canDeletePendingInvoices = snapshot.data == true;
+        final invoices = snapshot.data ?? [];
+        final count = invoices.length;
+        final hasError = snapshot.hasError;
 
-        return StreamBuilder<List<PendingInvoice>>(
-          stream: PendingInvoicesService.instance.pendingStream(),
-          builder: (context, snapshot) {
-            final invoices = snapshot.data ?? [];
-            final count = invoices.length;
-            final hasError = snapshot.hasError;
-
-            return Tooltip(
-              message: 'Pending invoices',
-              child: Semantics(
-                label: 'Pending invoices',
-                button: true,
-                child: GestureDetector(
-                  onTap: hasError
-                      ? () => _showLoadError(context)
-                      : () => _openSheet(
-                          context,
-                          invoices,
-                          canDeletePendingInvoices: canDeletePendingInvoices,
-                        ),
-                  child: _BadgeIcon(count: count, hasError: hasError),
-                ),
-              ),
-            );
-          },
+        return Tooltip(
+          message: 'Pending invoices',
+          child: Semantics(
+            label: 'Pending invoices',
+            button: true,
+            child: GestureDetector(
+              onTap: hasError
+                  ? () => _showLoadError(context)
+                  : () => _openSheet(context, invoices),
+              child: _BadgeIcon(count: count, hasError: hasError),
+            ),
+          ),
         );
       },
     );
@@ -89,11 +57,7 @@ class _PendingInvoicesBadgeButtonState
     );
   }
 
-  void _openSheet(
-    BuildContext context,
-    List<PendingInvoice> invoices, {
-    required bool canDeletePendingInvoices,
-  }) {
+  void _openSheet(BuildContext context, List<PendingInvoice> invoices) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -107,10 +71,9 @@ class _PendingInvoicesBadgeButtonState
           onTap: () {},
           child: _PendingInvoicesSheet(
             invoices: invoices,
-            canDeleteInvoices: canDeletePendingInvoices,
             onSelected: (inv) {
               Navigator.of(sheetContext).pop();
-              widget.onInvoiceSelected(inv);
+              onInvoiceSelected(inv);
             },
           ),
         ),
@@ -248,12 +211,10 @@ class _BadgeIconState extends State<_BadgeIcon>
 
 class _PendingInvoicesSheet extends StatelessWidget {
   final List<PendingInvoice> invoices;
-  final bool canDeleteInvoices;
   final void Function(PendingInvoice) onSelected;
 
   const _PendingInvoicesSheet({
     required this.invoices,
-    required this.canDeleteInvoices,
     required this.onSelected,
   });
 
@@ -356,7 +317,6 @@ class _PendingInvoicesSheet extends StatelessWidget {
                         itemCount: invoices.length,
                         itemBuilder: (_, i) => _InvoiceTile(
                           invoice: invoices[i],
-                          canDeleteInvoice: canDeleteInvoices,
                           onTap: () => onSelected(invoices[i]),
                         ),
                       ),
@@ -375,14 +335,9 @@ class _PendingInvoicesSheet extends StatelessWidget {
 
 class _InvoiceTile extends StatefulWidget {
   final PendingInvoice invoice;
-  final bool canDeleteInvoice;
   final VoidCallback onTap;
 
-  const _InvoiceTile({
-    required this.invoice,
-    required this.canDeleteInvoice,
-    required this.onTap,
-  });
+  const _InvoiceTile({required this.invoice, required this.onTap});
 
   @override
   State<_InvoiceTile> createState() => _InvoiceTileState();
@@ -390,7 +345,6 @@ class _InvoiceTile extends StatefulWidget {
 
 class _InvoiceTileState extends State<_InvoiceTile> {
   bool _loading = false;
-  bool _deleting = false;
 
   Future<void> _handleTap() async {
     if (_loading) return;
@@ -415,58 +369,6 @@ class _InvoiceTileState extends State<_InvoiceTile> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _handleDelete() async {
-    if (_loading || _deleting) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF2B3035),
-        title: const Text('Delete pending invoice?'),
-        content: Text(
-          'Delete "${widget.invoice.customerName}" from pending invoices? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() => _deleting = true);
-    try {
-      await PendingInvoicesService.instance.deleteInvoice(widget.invoice.docId);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pending invoice deleted.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Unable to delete this invoice. Check your organization access.',
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _deleting = false);
     }
   }
 
@@ -564,7 +466,7 @@ class _InvoiceTileState extends State<_InvoiceTile> {
             const SizedBox(width: 8),
 
             // Action / loader
-            if (_loading || _deleting)
+            if (_loading)
               const SizedBox(
                 width: 22,
                 height: 22,
@@ -573,27 +475,7 @@ class _InvoiceTileState extends State<_InvoiceTile> {
                   color: Color(0xFFEE671C),
                 ),
               )
-            else ...[
-              if (widget.canDeleteInvoice) ...[
-                Tooltip(
-                  message: 'Delete pending invoice',
-                  child: IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    onPressed: _handleDelete,
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.redAccent,
-                      size: 20,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-              ],
+            else
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -606,7 +488,6 @@ class _InvoiceTileState extends State<_InvoiceTile> {
                   size: 18,
                 ),
               ),
-            ],
           ],
         ),
       ),

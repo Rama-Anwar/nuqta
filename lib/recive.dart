@@ -51,11 +51,14 @@ class _ReceivePageState extends State<ReceivePage> {
   /// True while [_submit] is running – disables the submit button and shows
   /// a spinner to prevent double-submissions.
   bool _isSubmitting = false;
+  bool _isDeletingPendingInvoice = false;
+  bool _canDeletePendingInvoice = false;
 
   @override
   void initState() {
     super.initState();
     widget.controller?.addListener(_handleControllerLoad);
+    _loadDeletePermission();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleControllerLoad();
     });
@@ -78,6 +81,12 @@ class _ReceivePageState extends State<ReceivePage> {
     final invoice = widget.controller?.takePendingInvoice();
     if (invoice == null || !mounted) return;
     _loadFromPendingInvoice(invoice);
+  }
+
+  Future<void> _loadDeletePermission() async {
+    final profile = await getCurrentUserProfile();
+    if (!mounted) return;
+    setState(() => _canDeletePendingInvoice = profile?.isOwner == true);
   }
 
   double get _subtotal =>
@@ -398,6 +407,72 @@ class _ReceivePageState extends State<ReceivePage> {
     }
   }
 
+  Future<void> _deletePendingInvoice(AppLocalizations l10n) async {
+    final docId = _activePendingDocId;
+    if (docId == null || !_canDeletePendingInvoice) return;
+    if (_isSubmitting || _isDeletingPendingInvoice) return;
+
+    final customerName = _customerController.text.trim().isEmpty
+        ? l10n.unnamedCustomer
+        : _customerController.text.trim();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppPalette.surfaceCard,
+        title: Text(l10n.deleteInvoiceTitle),
+        content: Text(l10n.deleteInvoiceMessage(customerName)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: AppPalette.errorMuted),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isDeletingPendingInvoice = true);
+    try {
+      await PendingInvoicesService.instance.deleteInvoice(docId);
+      if (!mounted) return;
+
+      setState(() {
+        _activePendingDocId = null;
+        _customerController.clear();
+        _invoiceController.clear();
+        _dateController.clear();
+        _items.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pending invoice deleted.'),
+          backgroundColor: AppPalette.primaryContainer,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to delete pending invoice: $error'),
+          backgroundColor: AppPalette.errorMuted,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isDeletingPendingInvoice = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -459,7 +534,14 @@ class _ReceivePageState extends State<ReceivePage> {
                                     onPriceChanged: _updateItemPrice,
                                     onCostChanged: _updateItemCost,
                                     onSubmit: () => _submit(l10n),
+                                    onDeletePendingInvoice:
+                                        pendingInvoiceIsLoaded &&
+                                            _canDeletePendingInvoice
+                                        ? () => _deletePendingInvoice(l10n)
+                                        : null,
                                     isSubmitting: _isSubmitting,
+                                    isDeletingPendingInvoice:
+                                        _isDeletingPendingInvoice,
                                     submitLabel: submitLabel,
                                   )
                                 : _MobileLayout(
@@ -505,7 +587,12 @@ class _ReceivePageState extends State<ReceivePage> {
               _MobileActionBar(
                 total: _total,
                 onSubmit: () => _submit(l10n),
+                onDeletePendingInvoice:
+                    pendingInvoiceIsLoaded && _canDeletePendingInvoice
+                    ? () => _deletePendingInvoice(l10n)
+                    : null,
                 isSubmitting: _isSubmitting,
+                isDeletingPendingInvoice: _isDeletingPendingInvoice,
                 submitLabel: submitLabel,
               ),
               const AppBottomNavBar(activeIndex: 1),
@@ -657,7 +744,9 @@ class _DesktopLayout extends StatelessWidget {
   final void Function(int index, String value) onPriceChanged;
   final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
+  final VoidCallback? onDeletePendingInvoice;
   final bool isSubmitting;
+  final bool isDeletingPendingInvoice;
   final String submitLabel;
 
   const _DesktopLayout({
@@ -679,7 +768,9 @@ class _DesktopLayout extends StatelessWidget {
     required this.onPriceChanged,
     required this.onCostChanged,
     required this.onSubmit,
+    required this.onDeletePendingInvoice,
     required this.isSubmitting,
+    required this.isDeletingPendingInvoice,
     required this.submitLabel,
   });
 
@@ -809,7 +900,9 @@ class _DesktopLayout extends StatelessWidget {
             onPriceChanged: onPriceChanged,
             onCostChanged: onCostChanged,
             onSubmit: onSubmit,
+            onDeletePendingInvoice: onDeletePendingInvoice,
             isSubmitting: isSubmitting,
+            isDeletingPendingInvoice: isDeletingPendingInvoice,
             submitLabel: submitLabel,
           ),
         ),
@@ -1000,7 +1093,9 @@ class _ItemsPanelDesktop extends StatelessWidget {
   final void Function(int index, String value) onPriceChanged;
   final void Function(int index, String value) onCostChanged;
   final VoidCallback onSubmit;
+  final VoidCallback? onDeletePendingInvoice;
   final bool isSubmitting;
+  final bool isDeletingPendingInvoice;
   final String submitLabel;
 
   const _ItemsPanelDesktop({
@@ -1014,7 +1109,9 @@ class _ItemsPanelDesktop extends StatelessWidget {
     required this.onPriceChanged,
     required this.onCostChanged,
     required this.onSubmit,
+    required this.onDeletePendingInvoice,
     required this.isSubmitting,
+    required this.isDeletingPendingInvoice,
     required this.submitLabel,
   });
 
@@ -1102,7 +1199,9 @@ class _ItemsPanelDesktop extends StatelessWidget {
               (sum, item) => sum + (item.costPrice * item.quantity),
             ),
             onSubmit: onSubmit,
+            onDeletePendingInvoice: onDeletePendingInvoice,
             isSubmitting: isSubmitting,
+            isDeletingPendingInvoice: isDeletingPendingInvoice,
             submitLabel: submitLabel,
           ),
         ],
@@ -1184,7 +1283,9 @@ class _DesktopTotalsSummary extends StatelessWidget {
   final double total;
   final double totalCost;
   final VoidCallback onSubmit;
+  final VoidCallback? onDeletePendingInvoice;
   final bool isSubmitting;
+  final bool isDeletingPendingInvoice;
   final String submitLabel;
 
   const _DesktopTotalsSummary({
@@ -1193,7 +1294,9 @@ class _DesktopTotalsSummary extends StatelessWidget {
     required this.total,
     required this.totalCost,
     required this.onSubmit,
+    required this.onDeletePendingInvoice,
     required this.isSubmitting,
+    required this.isDeletingPendingInvoice,
     required this.submitLabel,
   });
 
@@ -1222,43 +1325,58 @@ class _DesktopTotalsSummary extends StatelessWidget {
             bold: true,
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isSubmitting ? null : onSubmit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.primaryContainer,
-                foregroundColor: AppPalette.textPrimary,
-                elevation: 0,
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: isSubmitting || isDeletingPendingInvoice
+                      ? null
+                      : onSubmit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppPalette.primaryContainer,
+                    foregroundColor: AppPalette.textPrimary,
+                    elevation: 0,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              submitLabel,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.check_circle_rounded, size: 18),
+                          ],
+                        ),
                 ),
               ),
-              child: isSubmitting
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          submitLabel,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Icon(Icons.check_circle_rounded, size: 18),
-                      ],
-                    ),
-            ),
+              if (onDeletePendingInvoice != null) ...[
+                const SizedBox(width: 10),
+                _PendingDeleteButton(
+                  tooltip: l10n.deleteInvoiceTitle,
+                  isDeleting: isDeletingPendingInvoice,
+                  onPressed: isSubmitting || isDeletingPendingInvoice
+                      ? null
+                      : onDeletePendingInvoice,
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -1288,13 +1406,17 @@ class _MobileCompactTotals extends StatelessWidget {
 class _MobileActionBar extends StatelessWidget {
   final double total;
   final VoidCallback onSubmit;
+  final VoidCallback? onDeletePendingInvoice;
   final bool isSubmitting;
+  final bool isDeletingPendingInvoice;
   final String submitLabel;
 
   const _MobileActionBar({
     required this.total,
     required this.onSubmit,
+    required this.onDeletePendingInvoice,
     required this.isSubmitting,
+    required this.isDeletingPendingInvoice,
     required this.submitLabel,
   });
 
@@ -1337,46 +1459,132 @@ class _MobileActionBar extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isSubmitting ? null : onSubmit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppPalette.primaryContainer,
-                  foregroundColor: AppPalette.textPrimary,
-                  elevation: 0,
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: isSubmitting || isDeletingPendingInvoice
+                        ? null
+                        : onSubmit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppPalette.primaryContainer,
+                      foregroundColor: AppPalette.textPrimary,
+                      elevation: 0,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                submitLabel,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.check_circle_rounded, size: 18),
+                            ],
+                          ),
                   ),
                 ),
-                child: isSubmitting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            submitLabel,
-
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.check_circle_rounded, size: 18),
-                        ],
-                      ),
-              ),
+                if (onDeletePendingInvoice != null) ...[
+                  const SizedBox(width: 10),
+                  _PendingDeleteButton(
+                    tooltip: l10n.deleteInvoiceTitle,
+                    isDeleting: isDeletingPendingInvoice,
+                    onPressed: isSubmitting || isDeletingPendingInvoice
+                        ? null
+                        : onDeletePendingInvoice,
+                  ),
+                ],
+              ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingDeleteButton extends StatelessWidget {
+  final String tooltip;
+  final bool isDeleting;
+  final VoidCallback? onPressed;
+
+  const _PendingDeleteButton({
+    required this.tooltip,
+    required this.isDeleting,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onPressed != null;
+    final borderColor = isEnabled
+        ? AppPalette.errorMuted
+        : AppPalette.borderLowContrast;
+    final foregroundColor = isEnabled
+        ? AppPalette.errorMuted
+        : AppPalette.textMuted.withValues(alpha: 0.55);
+
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: SizedBox.square(
+          dimension: 52,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: isDeleting
+                  ? AppPalette.errorMuted.withValues(alpha: 0.08)
+                  : Colors.transparent,
+              border: Border.all(color: borderColor),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: RawMaterialButton(
+              onPressed: onPressed,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 52, height: 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 140),
+                  child: isDeleting
+                      ? const SizedBox.square(
+                          key: ValueKey('pending-delete-spinner'),
+                          dimension: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: AppPalette.errorMuted,
+                          ),
+                        )
+                      : Icon(
+                          Icons.delete_outline_rounded,
+                          key: const ValueKey('pending-delete-icon'),
+                          size: 24,
+                          color: foregroundColor,
+                        ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
