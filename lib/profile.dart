@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:invoice_ai/firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:invoice_ai/helper/date_formatting_helpers.dart';
 import 'package:invoice_ai/helper/get_current_user_profile.dart';
@@ -264,6 +267,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           if (isOwner) ...[
             _buildActionRow(
+              icon: Icons.group_add_outlined,
+              title: 'Add employees',
+              subtitle: 'Invite team members to your organization',
+              onTap: _showAddEmployeeDialog,
+            ),
+            _buildDivider(),
+            _buildActionRow(
               icon: Icons.inventory_2_outlined,
               title: l10n.inventorySheet,
               subtitle: l10n.manageStockAndProducts,
@@ -338,6 +348,232 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showAddEmployeeDialog() async {
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surfaceContainer,
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+          titleTextStyle: GoogleFonts.montserrat(
+            color: AppColors.textMain,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+          contentTextStyle: GoogleFonts.inter(
+            color: AppColors.textDim,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          title: const Text('Add employee'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Create a sign-in account for the employee using their email and password.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                textCapitalization: TextCapitalization.none,
+                decoration: InputDecoration(
+                  labelText: 'Employee email',
+                  hintText: 'name@example.com',
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: AppColors.borderLowContrast.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.accent),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                enableSuggestions: false,
+                autocorrect: false,
+                decoration: InputDecoration(
+                  labelText: 'Employee password',
+                  hintText: 'Minimum 6 characters',
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: AppColors.borderLowContrast.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.accent),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+              onPressed: () async {
+                final email = emailController.text.trim();
+                final password = passwordController.text.trim();
+
+                if (email.isEmpty || !_isValidEmail(email)) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid email address.'),
+                    ),
+                  );
+                  return;
+                }
+
+                if (password.length < 6) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password must be at least 6 characters.'),
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.of(dialogContext).pop();
+                await _createEmployeeAccount(
+                  email: email,
+                  password: password,
+                );
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+
+    emailController.dispose();
+    passwordController.dispose();
+  }
+
+  Future<void> _createEmployeeAccount({
+    required String email,
+    required String password,
+  }) async {
+    final trimmedEmail = email.trim().toLowerCase();
+    final trimmedPassword = password.trim();
+    final ownerProfile = profile;
+
+    if (ownerProfile?.isOwner != true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only owners can add employees.')),
+      );
+      return;
+    }
+
+    final organizationId = ownerProfile?.organizationId.trim();
+    final currentUserId = user?.uid;
+
+    if (organizationId == null ||
+        organizationId.isEmpty ||
+        currentUserId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to add employee right now.')),
+      );
+      return;
+    }
+
+    try {
+      final secondaryApp = await _ensureEmployeeAuthApp();
+      final employeeAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      final credential = await employeeAuth.createUserWithEmailAndPassword(
+        email: trimmedEmail,
+        password: trimmedPassword,
+      );
+
+      final employeeUid = credential.user?.uid;
+      if (employeeUid == null) {
+        throw StateError('Employee account creation did not return a user id.');
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(employeeUid).set({
+        'email': trimmedEmail,
+        'name': trimmedEmail.split('@').first,
+        'organization_id': organizationId,
+        'role': 'employee',
+        'created_at': FieldValue.serverTimestamp(),
+        'created_by': currentUserId,
+        'is_active': true,
+      }, SetOptions(merge: true));
+
+      await employeeAuth.signOut();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Employee account for $trimmedEmail was created.')),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String message = 'Unable to create employee account.';
+      if (e.code == 'email-already-in-use') {
+        message = 'This email is already registered.';
+      } else if (e.code == 'weak-password') {
+        message = 'Password is too weak.';
+      } else if (e.code == 'invalid-email') {
+        message = 'Please enter a valid email address.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to create employee account: $error')),
+      );
+    }
+  }
+
+  Future<FirebaseApp> _ensureEmployeeAuthApp() async {
+    const appName = 'employee_creation_app';
+
+    try {
+      return Firebase.app(appName);
+    } catch (_) {
+      return Firebase.initializeApp(
+        name: appName,
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  }
+
+  bool _isValidEmail(String value) {
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
   }
 
   Future<void> _openInventorySheet(AppLocalizations l10n) async {
