@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:invoice_ai/firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:invoice_ai/firebase_options.dart';
 import 'package:invoice_ai/helper/date_formatting_helpers.dart';
 import 'package:invoice_ai/helper/get_current_user_profile.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
@@ -274,6 +274,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             _buildDivider(),
             _buildActionRow(
+              icon: Icons.percent_outlined,
+              title: 'Tax percentage',
+              subtitle:
+                  'Current tax: ${_formatPercentage(profile?.taxPercentage ?? 0)}',
+              onTap: _showTaxPercentageDialog,
+            ),
+            _buildDivider(),
+            _buildActionRow(
               icon: Icons.inventory_2_outlined,
               title: l10n.inventorySheet,
               subtitle: l10n.manageStockAndProducts,
@@ -376,9 +384,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Create a sign-in account for the employee using their email and password.',
-              ),
+              const Text('Create employee credentials for your organization.'),
               const SizedBox(height: 12),
               TextField(
                 controller: emailController,
@@ -408,12 +414,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: passwordController,
+                keyboardType: TextInputType.visiblePassword,
                 obscureText: true,
-                enableSuggestions: false,
                 autocorrect: false,
                 decoration: InputDecoration(
                   labelText: 'Employee password',
-                  hintText: 'Minimum 6 characters',
+                  hintText: 'At least 6 characters',
                   filled: true,
                   fillColor: AppColors.surface,
                   border: OutlineInputBorder(
@@ -443,7 +449,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () async {
                 final email = emailController.text.trim();
                 final password = passwordController.text.trim();
-
                 if (email.isEmpty || !_isValidEmail(email)) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -453,22 +458,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                   return;
                 }
-
                 if (password.length < 6) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Password must be at least 6 characters.'),
+                      content: Text(
+                        'Password must be at least 6 characters long.',
+                      ),
                     ),
                   );
                   return;
                 }
 
                 Navigator.of(dialogContext).pop();
-                await _createEmployeeAccount(
-                  email: email,
-                  password: password,
-                );
+                await _createEmployeeAccount(email, password);
               },
               child: const Text('Add'),
             ),
@@ -481,12 +484,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     passwordController.dispose();
   }
 
-  Future<void> _createEmployeeAccount({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> _createEmployeeAccount(String email, String password) async {
     final trimmedEmail = email.trim().toLowerCase();
-    final trimmedPassword = password.trim();
     final ownerProfile = profile;
 
     if (ownerProfile?.isOwner != true) {
@@ -510,71 +509,203 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
+    FirebaseApp? secondaryApp;
     try {
-      final secondaryApp = await _ensureEmployeeAuthApp();
+      secondaryApp = await Firebase.initializeApp(
+        name: 'employeeCreation',
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } on FirebaseException catch (error) {
+      if (error.code == 'duplicate-app') {
+        secondaryApp = Firebase.app('employeeCreation');
+      } else {
+        rethrow;
+      }
+    }
+
+    try {
       final employeeAuth = FirebaseAuth.instanceFor(app: secondaryApp);
       final credential = await employeeAuth.createUserWithEmailAndPassword(
         email: trimmedEmail,
-        password: trimmedPassword,
+        password: password,
       );
-
-      final employeeUid = credential.user?.uid;
-      if (employeeUid == null) {
-        throw StateError('Employee account creation did not return a user id.');
+      final employeeUser = credential.user;
+      if (employeeUser == null) {
+        throw StateError('Employee account was not created.');
       }
 
-      await FirebaseFirestore.instance.collection('users').doc(employeeUid).set({
-        'email': trimmedEmail,
-        'name': trimmedEmail.split('@').first,
-        'organization_id': organizationId,
-        'role': 'employee',
-        'created_at': FieldValue.serverTimestamp(),
-        'created_by': currentUserId,
-        'is_active': true,
-      }, SetOptions(merge: true));
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(employeeUser.uid)
+            .set({
+              'name': trimmedEmail.split('@').first,
+              'email': trimmedEmail,
+              'organization_id': organizationId,
+              'role': 'employee',
+              'created_by': currentUserId,
+              'created_at': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+      } catch (_) {
+        await employeeUser.delete();
+        rethrow;
+      }
 
       await employeeAuth.signOut();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Employee account for $trimmedEmail was created.')),
+        SnackBar(
+          content: Text('Employee account for $trimmedEmail was added.'),
+        ),
       );
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException catch (error) {
       if (!mounted) return;
-      String message = 'Unable to create employee account.';
-      if (e.code == 'email-already-in-use') {
-        message = 'This email is already registered.';
-      } else if (e.code == 'weak-password') {
-        message = 'Password is too weak.';
-      } else if (e.code == 'invalid-email') {
-        message = 'Please enter a valid email address.';
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_employeeAuthErrorMessage(error))));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to create employee account: $error')),
-      );
-    }
-  }
-
-  Future<FirebaseApp> _ensureEmployeeAuthApp() async {
-    const appName = 'employee_creation_app';
-
-    try {
-      return Firebase.app(appName);
-    } catch (_) {
-      return Firebase.initializeApp(
-        name: appName,
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to add employee: $error')));
     }
   }
 
   bool _isValidEmail(String value) {
     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
   }
+
+  String _employeeAuthErrorMessage(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'email-already-in-use':
+        return 'An account already exists for this email.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'weak-password':
+        return 'Please use a stronger password.';
+      default:
+        return 'Unable to add employee: ${error.message ?? error.code}';
+    }
+  }
+
+  Future<void> _showTaxPercentageDialog() async {
+    final controller = TextEditingController(
+      text: _formatTaxInput(profile?.taxPercentage ?? 0),
+    );
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surfaceContainer,
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+          titleTextStyle: GoogleFonts.montserrat(
+            color: AppColors.textMain,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+          contentTextStyle: GoogleFonts.inter(
+            color: AppColors.textDim,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          title: const Text('Tax percentage'),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: 'Tax percentage',
+              suffixText: '%',
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: AppColors.borderLowContrast.withValues(alpha: 0.6),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.accent),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+              onPressed: () async {
+                final value = double.tryParse(controller.text.trim());
+                if (value == null || value < 0 || value > 100) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Enter a tax percentage from 0 to 100.'),
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.of(dialogContext).pop();
+                await _saveTaxPercentage(value);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    controller.dispose();
+  }
+
+  Future<void> _saveTaxPercentage(double value) async {
+    final ownerProfile = profile;
+    final organizationId = ownerProfile?.organizationId.trim();
+
+    if (ownerProfile?.isOwner != true ||
+        organizationId == null ||
+        organizationId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only owners can update tax settings.')),
+      );
+      return;
+    }
+
+    await FirebaseFirestore.instance
+        .collection('organizations')
+        .doc(organizationId)
+        .set({
+          'tax_percentage': value,
+          'tax_updated_at': FieldValue.serverTimestamp(),
+          'tax_updated_by': user?.uid,
+        }, SetOptions(merge: true));
+
+    await _loadProfile();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Tax percentage set to ${_formatPercentage(value)}.'),
+      ),
+    );
+  }
+
+  String _formatTaxInput(double value) {
+    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+    return value.toStringAsFixed(2);
+  }
+
+  String _formatPercentage(double value) => '${_formatTaxInput(value)}%';
 
   Future<void> _openInventorySheet(AppLocalizations l10n) async {
     final sheetUrl = priceSheetUrl?.trim();

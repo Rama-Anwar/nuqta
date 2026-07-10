@@ -347,7 +347,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get subtotal => 'المجموع الفرعي';
 
   @override
-  String get tax => 'الضريبة (10٪)';
+  String get tax => 'الضريبة';
 
   @override
   String get totalCost => 'إجمالي التكلفة';

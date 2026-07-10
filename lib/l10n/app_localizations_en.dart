@@ -348,7 +348,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subtotal => 'Subtotal';
 
   @override
-  String get tax => 'Tax (10%)';
+  String get tax => 'Tax';
 
   @override
   String get totalCost => 'Total Cost';

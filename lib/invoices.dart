@@ -133,6 +133,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
         createdAt: receipt.createdAt,
         items: receipt.items,
         status: newStatus,
+        taxPercentage: receipt.taxPercentage,
       ),
     );
   }
@@ -209,6 +210,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                 .toList(),
             createdAt: r.createdAt,
             invoiceId: r.invoiceId,
+            taxPercentage: r.taxPercentage,
           ),
         )
         .toList();
@@ -1256,6 +1258,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
       createdAt: receipt.createdAt,
       items: receipt.items,
       status: newStatus,
+      taxPercentage: receipt.taxPercentage,
     );
 
     await ReceiptStore.instance.updateReceipt(updatedReceipt);
@@ -1272,6 +1275,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
         items: _invoice.items,
         createdAt: _invoice.createdAt,
         invoiceId: _invoice.invoiceId,
+        taxPercentage: _invoice.taxPercentage,
       );
     });
   }
@@ -1743,6 +1747,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
       date: _invoice.date,
       status: _invoice.status,
       createdAt: _invoice.createdAt,
+      taxPercentage: _invoice.taxPercentage,
       items: edited
           .map(
             (line) => ReceiptLineItem(
@@ -1777,6 +1782,7 @@ class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
             .toList(),
         createdAt: updatedReceipt.createdAt,
         invoiceId: updatedReceipt.invoiceId,
+        taxPercentage: updatedReceipt.taxPercentage,
       );
     });
   }

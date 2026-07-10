@@ -53,12 +53,13 @@ class _ReceivePageState extends State<ReceivePage> {
   bool _isSubmitting = false;
   bool _isDeletingPendingInvoice = false;
   bool _canDeletePendingInvoice = false;
+  double _taxPercentage = 0.0;
 
   @override
   void initState() {
     super.initState();
     widget.controller?.addListener(_handleControllerLoad);
-    _loadDeletePermission();
+    _loadProfileSettings();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleControllerLoad();
     });
@@ -83,16 +84,19 @@ class _ReceivePageState extends State<ReceivePage> {
     _loadFromPendingInvoice(invoice);
   }
 
-  Future<void> _loadDeletePermission() async {
+  Future<void> _loadProfileSettings() async {
     final profile = await getCurrentUserProfile();
     if (!mounted) return;
-    setState(() => _canDeletePendingInvoice = profile?.isOwner == true);
+    setState(() {
+      _canDeletePendingInvoice = profile?.isOwner == true;
+      _taxPercentage = profile?.taxPercentage ?? 0.0;
+    });
   }
 
   double get _subtotal =>
       _items.fold<double>(0, (sum, line) => sum + line.total);
-  double get _tax => 0.0;
-  double get _total => _subtotal;
+  double get _tax => _subtotal * _taxPercentage / 100;
+  double get _total => _subtotal + _tax;
 
   void _addItem(AppLocalizations l10n) {
     final name = _itemController.text.trim();
@@ -267,6 +271,7 @@ class _ReceivePageState extends State<ReceivePage> {
           date: _parseReceiptDate(_dateController.text),
           createdAt: DateTime.now(),
           status: InvoiceStatus.outstanding,
+          taxPercentage: _taxPercentage,
           items: _items
               .map(
                 (line) => ReceiptLineItem(
@@ -324,6 +329,7 @@ class _ReceivePageState extends State<ReceivePage> {
           date: _parseReceiptDate(_dateController.text),
           createdAt: DateTime.now(),
           status: InvoiceStatus.outstanding,
+          taxPercentage: _taxPercentage,
           items: _items
               .map(
                 (line) => ReceiptLineItem(

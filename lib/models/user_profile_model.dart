@@ -9,6 +9,7 @@ class UserProfile {
   final String finalizeWebhookUrl;
   final String organizationId;
   final String role;
+  final double taxPercentage;
   final DateTime? billingDate;
 
   UserProfile({
@@ -20,6 +21,7 @@ class UserProfile {
     required this.finalizeWebhookUrl,
     required this.organizationId,
     required this.role,
+    required this.taxPercentage,
     required this.billingDate,
   });
 
@@ -58,8 +60,14 @@ class UserProfile {
           ? (userData['organization_id'] as String).trim()
           : '',
       role: role,
+      taxPercentage: _parsePercentage(organizationData?['tax_percentage']),
       billingDate: _parseDate(organizationData?['billing_date']),
     );
+  }
+
+  static double _parsePercentage(dynamic value) {
+    final parsed = (value as num?)?.toDouble() ?? 0.0;
+    return parsed.clamp(0.0, 100.0).toDouble();
   }
 
   static DateTime? _parseDate(dynamic value) {

@@ -169,6 +169,7 @@ class ReceiptStore extends ChangeNotifier {
       items: receipt.items,
       userUid: receipt.userUid,
       status: receipt.status,
+      taxPercentage: receipt.taxPercentage,
       organizationId: receipt.organizationId,
       createdBy: receipt.createdBy,
       createdByEmail: receipt.createdByEmail,
@@ -298,6 +299,7 @@ class ReceiptRecord {
   final List<ReceiptLineItem> items;
   final String userUid;
   final InvoiceStatus status;
+  final double taxPercentage;
   final String? organizationId;
   final String? createdBy;
   final String? createdByEmail;
@@ -311,6 +313,7 @@ class ReceiptRecord {
     required this.createdAt,
     required this.items,
     required this.status,
+    this.taxPercentage = 0.0,
     this.organizationId,
     this.createdBy,
     this.createdByEmail,
@@ -318,8 +321,8 @@ class ReceiptRecord {
 
   double get subtotal =>
       items.fold<double>(0, (total, item) => total + item.total);
-  double get tax => 0.0;
-  double get total => subtotal;
+  double get tax => subtotal * taxPercentage / 100;
+  double get total => subtotal + tax;
   double get totalCost => items.fold<double>(
     0,
     (total, item) => total + (item.costPrice * item.quantity),
@@ -341,6 +344,10 @@ class ReceiptRecord {
     'organization_id': organizationId ?? this.organizationId,
     'created_by': createdBy ?? this.createdBy ?? userUid,
     'created_by_email': createdByEmail ?? this.createdByEmail,
+    'tax_percentage': taxPercentage,
+    'tax': tax,
+    'subtotal': subtotal,
+    'total': total,
     'status': status.name,
     // Store as real Firestore timestamps
     'date': Timestamp.fromDate(date),
@@ -371,6 +378,7 @@ class ReceiptRecord {
         (e) => e.name == json['status'],
         orElse: () => InvoiceStatus.outstanding,
       ),
+      taxPercentage: (json['tax_percentage'] as num?)?.toDouble() ?? 0.0,
       organizationId: json['organization_id'] as String?,
       createdBy:
           (json['created_by'] as String?) ?? (json['userUid'] as String?),

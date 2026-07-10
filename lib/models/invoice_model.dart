@@ -48,6 +48,7 @@ class InvoiceModel {
   final List<InvoiceLine> items;
   final DateTime createdAt;
   final String? invoiceId;
+  final double taxPercentage;
 
   const InvoiceModel({
     required this.id,
@@ -59,6 +60,7 @@ class InvoiceModel {
     this.items = const [],
     required this.createdAt,
     this.invoiceId,
+    this.taxPercentage = 0.0,
   });
 
   double get totalProfit =>
@@ -75,6 +77,7 @@ class InvoiceModel {
     'items': items.map((item) => item.toJson()).toList(),
     'createdAt': createdAt.toIso8601String(),
     'invoiceId': invoiceId,
+    'tax_percentage': taxPercentage,
   };
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
@@ -100,6 +103,7 @@ class InvoiceModel {
           .toList(),
       createdAt: parseDate(json['createdAt']),
       invoiceId: json['invoiceId'] as String?,
+      taxPercentage: (json['tax_percentage'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

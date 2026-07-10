@@ -853,52 +853,54 @@ class _DashPageState extends State<DashPage> {
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 44),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: const [
-                  _LoadingBlock(width: 288, height: 168),
-                  _LoadingBlock(width: 288, height: 168),
-                  _LoadingBlock(width: 288, height: 168),
-                  _LoadingBlock(width: 288, height: 168),
-                ],
-              ),
-              const SizedBox(height: 28),
-              const _LoadingBlock(height: 350),
-              const SizedBox(height: 24),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 760) {
-                    return const Column(
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 44),
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: const [
+                    _LoadingBlock(width: 288, height: 168),
+                    _LoadingBlock(width: 288, height: 168),
+                    _LoadingBlock(width: 288, height: 168),
+                    _LoadingBlock(width: 288, height: 168),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                const _LoadingBlock(height: 350),
+                const SizedBox(height: 24),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth < 760) {
+                      return const Column(
+                        children: [
+                          _LoadingBlock(height: 260),
+                          SizedBox(height: 24),
+                          _LoadingBlock(height: 260),
+                        ],
+                      );
+                    }
+
+                    return const Row(
                       children: [
-                        _LoadingBlock(height: 260),
-                        SizedBox(height: 24),
-                        _LoadingBlock(height: 260),
+                        Expanded(child: _LoadingBlock(height: 260)),
+                        SizedBox(width: 24),
+                        Expanded(child: _LoadingBlock(height: 260)),
                       ],
                     );
-                  }
-
-                  return const Row(
-                    children: [
-                      Expanded(child: _LoadingBlock(height: 260)),
-                      SizedBox(width: 24),
-                      Expanded(child: _LoadingBlock(height: 260)),
-                    ],
-                  );
-                },
-              ),
-            ],
+                  },
+                ),
+              ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
