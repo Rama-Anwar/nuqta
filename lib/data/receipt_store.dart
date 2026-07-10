@@ -68,11 +68,12 @@ class ReceiptStore extends ChangeNotifier {
       );
       final organizationData = organizationSnapshot.data();
       final storedNextNumber = organizationData?['next_invoice_number'];
-      final nextNumber = storedNextNumber is num && storedNextNumber.toInt() > 0
-          ? storedNextNumber.toInt()
-          : _nextInvoiceNumber(_existingInvoiceIds());
+      final nextNumber = _nextInvoiceNumber(
+        _existingInvoiceIds(),
+        storedNextNumber: storedNextNumber,
+      );
 
-      assigned = _withInvoiceId(receipt, 'INV-$nextNumber');
+      assigned = _withInvoiceId(receipt, _formatInvoiceId(nextNumber));
 
       transaction.set(
         context.collection.doc(assigned.id),
@@ -176,7 +177,7 @@ class ReceiptStore extends ChangeNotifier {
     }
 
     final nextNumber = _nextInvoiceNumber(existingIds);
-    return _withInvoiceId(receipt, 'INV-$nextNumber');
+    return _withInvoiceId(receipt, _formatInvoiceId(nextNumber));
   }
 
   ReceiptRecord _withInvoiceId(ReceiptRecord receipt, String invoiceId) {
@@ -203,16 +204,29 @@ class ReceiptStore extends ChangeNotifier {
         .toSet();
   }
 
-  int _nextInvoiceNumber(Set<String> existingIds) {
+  String _formatInvoiceId(int number) {
+    return 'INV-${number.toString().padLeft(4, '0')}';
+  }
+
+  int _nextInvoiceNumber(Set<String> existingIds, {dynamic storedNextNumber}) {
     var maxNumber = 0;
     for (final id in existingIds) {
-      final match = RegExp(r'^(?:INV-)?(\d+)$').firstMatch(id);
+      final match = RegExp(
+        r'^(?:INV-)?(0\d{3}|[1-9]\d{0,2})$',
+      ).firstMatch(id.trim());
       if (match != null) {
         final value = int.tryParse(match.group(1)!);
         if (value != null && value > maxNumber) maxNumber = value;
       }
     }
-    return maxNumber + 1;
+
+    final historyNextNumber = maxNumber + 1;
+    final stored = storedNextNumber is num ? storedNextNumber.toInt() : null;
+    if (stored != null && stored > 0 && stored <= historyNextNumber) {
+      return stored;
+    }
+
+    return historyNextNumber;
   }
 
   // ─── analytics helpers (unchanged) ───────────────────────────────────────
