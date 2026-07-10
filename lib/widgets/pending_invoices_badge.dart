@@ -430,15 +430,17 @@ class _InvoiceTileState extends State<_InvoiceTile> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(
-                        inv.invoiceId.isNotEmpty ? inv.invoiceId : '—',
-                        style: GoogleFonts.jetBrainsMono(
-                          color: const Color(0xFFEE671C),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                      if (inv.invoiceId.isNotEmpty) ...[
+                        Text(
+                          inv.invoiceId,
+                          style: GoogleFonts.jetBrainsMono(
+                            color: const Color(0xFFEE671C),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
+                        const SizedBox(width: 8),
+                      ],
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,

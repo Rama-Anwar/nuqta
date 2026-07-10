@@ -23,10 +23,6 @@ class PendingInvoice {
   factory PendingInvoice.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
 
-    // invoice_id may arrive as a number or a string from n8n
-    final rawId = data['invoice_id'];
-    final invoiceIdStr = rawId == null ? '' : rawId.toString();
-
     final rawItems = data['items'];
     final items = <PendingInvoiceItem>[];
     if (rawItems is List) {
@@ -40,7 +36,7 @@ class PendingInvoice {
     return PendingInvoice(
       docId: doc.id,
       customerName: (data['customer_name'] as String?) ?? 'Unknown',
-      invoiceId: invoiceIdStr,
+      invoiceId: '',
       status: (data['status'] as String?) ?? 'pending_review',
       date: _parseDate(
         data['date'] ??
