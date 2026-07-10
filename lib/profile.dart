@@ -268,16 +268,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (isOwner) ...[
             _buildActionRow(
               icon: Icons.group_add_outlined,
-              title: 'Add employees',
-              subtitle: 'Invite team members to your organization',
+              title: l10n.addEmployees,
+              subtitle: l10n.inviteTeamMembers,
               onTap: _showAddEmployeeDialog,
             ),
             _buildDivider(),
             _buildActionRow(
               icon: Icons.percent_outlined,
-              title: 'Tax percentage',
+              title: l10n.taxPercentage,
               subtitle:
-                  'Current tax: ${_formatPercentage(profile?.taxPercentage ?? 0)}',
+                  '${l10n.currentTax} ${_formatPercentage(profile?.taxPercentage ?? 0)}',
               onTap: _showTaxPercentageDialog,
             ),
             _buildDivider(),

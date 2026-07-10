@@ -234,7 +234,11 @@
   "loginFailed": "فشل تسجيل الدخول",
   "noUserFoundForEmail": "لا يوجد مستخدم بهذا البريد الإلكتروني.",
   "wrongPassword": "كلمة المرور غير صحيحة.",
-  "invalidEmail": "البريد الإلكتروني غير صالح."
+  "invalidEmail": "البريد الإلكتروني غير صالح.",
 
+  "addEmployees": "إضافة موظفين",
+  "inviteTeamMembers": "دعوة أعضاء الفريق إلى مؤسستك",
+  "taxPercentage": "نسبة الضريبة",
+  "currentTax": "الضريبة الحالية:"
 
 }

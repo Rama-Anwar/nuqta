@@ -69,12 +69,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logout => 'LOGOUT';
 
   @override
-  String get inventorySheetUrlInvalid =>
-      'Inventory sheet URL is missing or invalid.';
+  String get inventorySheetUrlInvalid => 'Inventory sheet URL is missing or invalid.';
 
   @override
-  String get unableToOpenInventorySheet =>
-      'Unable to open the inventory sheet.';
+  String get unableToOpenInventorySheet => 'Unable to open the inventory sheet.';
 
   @override
   String billingDate(Object date) {
@@ -161,8 +159,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboard => 'Dashboard';
 
   @override
-  String get dashboardLoadError =>
-      'Unable to load dashboard data. Check your organization access.';
+  String get dashboardLoadError => 'Unable to load dashboard data. Check your organization access.';
 
   @override
   String get dashboardTotalProfit => 'TOTAL PROFIT';
@@ -380,12 +377,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invoiceApprovedProcessed => 'Invoice approved & processed!';
 
   @override
-  String get receiptSavedDashboardUpdated =>
-      'Receipt saved and dashboard updated.';
+  String get receiptSavedDashboardUpdated => 'Receipt saved and dashboard updated.';
 
   @override
-  String get invoiceApprovedNotificationFailed =>
-      'Invoice approved, but finalization notification failed.';
+  String get invoiceApprovedNotificationFailed => 'Invoice approved, but finalization notification failed.';
 
   @override
   String failedSaveApproveInvoice(Object error) {
@@ -401,8 +396,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get needHelp => 'Need help?';
 
   @override
-  String get supportIntro =>
-      'Send us the issue details and the support team will follow up.';
+  String get supportIntro => 'Send us the issue details and the support team will follow up.';
 
   @override
   String get issueType => 'ISSUE TYPE';
@@ -475,4 +469,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invalidEmail => 'Invalid email.';
+
+  @override
+  String get addEmployees => 'Add employees';
+
+  @override
+  String get inviteTeamMembers => 'Invite team members to your organization';
+
+  @override
+  String get taxPercentage => 'Tax percentage';
+
+  @override
+  String get currentTax => 'Current tax:';
 }

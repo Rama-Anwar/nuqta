@@ -239,6 +239,11 @@
   "loginFailed": "Login failed",
   "noUserFoundForEmail": "No user found for this email.",
   "wrongPassword": "Wrong password.",
-  "invalidEmail": "Invalid email."
+  "invalidEmail": "Invalid email.",
+
+  "addEmployees": "Add employees",
+  "inviteTeamMembers": "Invite team members to your organization",
+  "taxPercentage": "Tax percentage",
+  "currentTax": "Current tax:"
 
 }

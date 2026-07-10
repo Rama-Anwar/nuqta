@@ -69,8 +69,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get logout => 'تسجيل الخروج';
 
   @override
-  String get inventorySheetUrlInvalid =>
-      'رابط جدول المخزون غير موجود أو غير صالح.';
+  String get inventorySheetUrlInvalid => 'رابط جدول المخزون غير موجود أو غير صالح.';
 
   @override
   String get unableToOpenInventorySheet => 'تعذر فتح جدول المخزون.';
@@ -160,8 +159,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboard => 'لوحة التحكم';
 
   @override
-  String get dashboardLoadError =>
-      'تعذر تحميل بيانات لوحة التحكم. تحقق من صلاحية الوصول إلى المنشأة.';
+  String get dashboardLoadError => 'تعذر تحميل بيانات لوحة التحكم. تحقق من صلاحية الوصول إلى المنشأة.';
 
   @override
   String get dashboardTotalProfit => 'إجمالي الربح';
@@ -382,8 +380,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get receiptSavedDashboardUpdated => 'تم حفظ السند وتحديث لوحة التحكم.';
 
   @override
-  String get invoiceApprovedNotificationFailed =>
-      'تم اعتماد الفاتورة ولكن فشل إرسال إشعار الإنهاء.';
+  String get invoiceApprovedNotificationFailed => 'تم اعتماد الفاتورة ولكن فشل إرسال إشعار الإنهاء.';
 
   @override
   String failedSaveApproveInvoice(Object error) {
@@ -399,8 +396,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get needHelp => 'بحاجة إلى مساعدة؟';
 
   @override
-  String get supportIntro =>
-      'أرسل تفاصيل المشكلة وسيقوم فريق الدعم بالتواصل معك.';
+  String get supportIntro => 'أرسل تفاصيل المشكلة وسيقوم فريق الدعم بالتواصل معك.';
 
   @override
   String get issueType => 'نوع المشكلة';
@@ -473,4 +469,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get invalidEmail => 'البريد الإلكتروني غير صالح.';
+
+  @override
+  String get addEmployees => 'إضافة موظفين';
+
+  @override
+  String get inviteTeamMembers => 'دعوة أعضاء الفريق إلى مؤسستك';
+
+  @override
+  String get taxPercentage => 'نسبة الضريبة';
+
+  @override
+  String get currentTax => 'الضريبة الحالية:';
 }
