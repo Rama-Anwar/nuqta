@@ -35,7 +35,6 @@ class ReceivePage extends StatefulWidget {
 
 class _ReceivePageState extends State<ReceivePage> {
   final _customerController = TextEditingController();
-  final _invoiceController = TextEditingController();
   final _dateController = TextEditingController();
   final _itemController = TextEditingController();
   final _quantityController = TextEditingController(text: '1');
@@ -69,7 +68,6 @@ class _ReceivePageState extends State<ReceivePage> {
   void dispose() {
     widget.controller?.removeListener(_handleControllerLoad);
     _customerController.dispose();
-    _invoiceController.dispose();
     _dateController.dispose();
     _itemController.dispose();
     _quantityController.dispose();
@@ -168,7 +166,6 @@ class _ReceivePageState extends State<ReceivePage> {
       _activePendingDocId = inv.docId;
 
       _customerController.text = inv.customerName;
-      _invoiceController.text = inv.invoiceId;
       if (inv.date != null) {
         _dateController.text = _formatReceiptDate(inv.date!);
       }
@@ -247,7 +244,6 @@ class _ReceivePageState extends State<ReceivePage> {
     final customerName = _customerController.text.trim().isEmpty
         ? l10n.unnamedCustomer
         : _customerController.text.trim();
-    final invoiceId = _invoiceController.text.trim();
     final editedItems = _items
         .map(
           (line) => <String, dynamic>{
@@ -267,7 +263,7 @@ class _ReceivePageState extends State<ReceivePage> {
           id: 'RCPT-${DateTime.now().millisecondsSinceEpoch}',
           userUid: FirebaseAuth.instance.currentUser!.uid,
           customerName: customerName,
-          invoiceId: invoiceId.isEmpty ? null : invoiceId,
+          invoiceId: null,
           date: _parseReceiptDate(_dateController.text),
           createdAt: DateTime.now(),
           status: InvoiceStatus.outstanding,
@@ -284,18 +280,19 @@ class _ReceivePageState extends State<ReceivePage> {
               .toList(),
         );
 
-        await ReceiptStore.instance.addReceipt(receipt);
+        final assignedReceipt = await ReceiptStore.instance.addReceipt(receipt);
+        final assignedInvoiceId = assignedReceipt.invoiceId ?? '';
 
         try {
           await PendingInvoicesService.instance.approveInvoice(
             docId: docId,
             customerName: customerName,
-            invoiceId: invoiceId,
+            invoiceId: assignedInvoiceId,
             items: editedItems,
           );
         } catch (approvalError) {
           try {
-            await ReceiptStore.instance.deleteReceipt(receipt.id);
+            await ReceiptStore.instance.deleteReceipt(assignedReceipt.id);
           } catch (rollbackError) {
             debugPrint(
               'Receipt rollback failed after approveInvoice error: '
@@ -311,7 +308,7 @@ class _ReceivePageState extends State<ReceivePage> {
           await N8nWebhookService.instance.pingDocId(
             organizationId: organizationId,
             docId: docId,
-            invoiceId: invoiceId,
+            invoiceId: assignedInvoiceId,
             customerName: customerName,
             items: editedItems,
           );
@@ -325,7 +322,7 @@ class _ReceivePageState extends State<ReceivePage> {
           id: 'RCPT-${DateTime.now().millisecondsSinceEpoch}',
           userUid: FirebaseAuth.instance.currentUser!.uid,
           customerName: customerName,
-          invoiceId: invoiceId.isEmpty ? null : invoiceId,
+          invoiceId: null,
           date: _parseReceiptDate(_dateController.text),
           createdAt: DateTime.now(),
           status: InvoiceStatus.outstanding,
@@ -351,7 +348,6 @@ class _ReceivePageState extends State<ReceivePage> {
       setState(() {
         _activePendingDocId = null;
         _customerController.clear();
-        _invoiceController.clear();
         _dateController.clear();
         _items.clear();
       });
@@ -453,7 +449,6 @@ class _ReceivePageState extends State<ReceivePage> {
       setState(() {
         _activePendingDocId = null;
         _customerController.clear();
-        _invoiceController.clear();
         _dateController.clear();
         _items.clear();
       });
@@ -516,7 +511,7 @@ class _ReceivePageState extends State<ReceivePage> {
                             if (pendingInvoiceIsLoaded) ...[
                               _PendingInvoiceBanner(
                                 customerName: _customerController.text.trim(),
-                                invoiceId: _invoiceController.text.trim(),
+                                invoiceId: '',
                               ),
                               const SizedBox(height: 16),
                             ],
@@ -524,7 +519,6 @@ class _ReceivePageState extends State<ReceivePage> {
                                 ? _DesktopLayout(
                                     customerController: _customerController,
                                     costPriceController: _costPriceController,
-                                    invoiceController: _invoiceController,
                                     dateController: _dateController,
                                     itemController: _itemController,
                                     quantityController: _quantityController,
@@ -553,7 +547,6 @@ class _ReceivePageState extends State<ReceivePage> {
                                 : _MobileLayout(
                                     costPriceController: _costPriceController,
                                     customerController: _customerController,
-                                    invoiceController: _invoiceController,
                                     dateController: _dateController,
                                     itemController: _itemController,
                                     quantityController: _quantityController,
@@ -736,7 +729,6 @@ class _PendingInvoiceBanner extends StatelessWidget {
 class _DesktopLayout extends StatelessWidget {
   final TextEditingController customerController;
   final TextEditingController costPriceController;
-  final TextEditingController invoiceController;
   final TextEditingController dateController;
   final TextEditingController itemController;
   final TextEditingController quantityController;
@@ -760,7 +752,6 @@ class _DesktopLayout extends StatelessWidget {
   const _DesktopLayout({
     required this.customerController,
     required this.costPriceController,
-    required this.invoiceController,
     required this.dateController,
     required this.itemController,
     required this.quantityController,
@@ -800,13 +791,6 @@ class _DesktopLayout extends StatelessWidget {
                       controller: customerController,
                       label: l10n.customerSupplierName,
                       hint: l10n.enterName,
-                    ),
-                    const SizedBox(height: 16),
-                    _LabeledInput(
-                      controller: invoiceController,
-                      label: l10n.invoiceIdOptional,
-                      hint: 'INV-0000',
-                      mono: true,
                     ),
                     const SizedBox(height: 16),
                     _LabeledInput(
@@ -923,7 +907,6 @@ class _DesktopLayout extends StatelessWidget {
 
 class _MobileLayout extends StatelessWidget {
   final TextEditingController customerController;
-  final TextEditingController invoiceController;
   final TextEditingController dateController;
   final TextEditingController itemController;
   final TextEditingController costPriceController;
@@ -945,7 +928,6 @@ class _MobileLayout extends StatelessWidget {
   const _MobileLayout({
     required this.costPriceController,
     required this.customerController,
-    required this.invoiceController,
     required this.dateController,
     required this.itemController,
     required this.quantityController,
@@ -978,13 +960,6 @@ class _MobileLayout extends StatelessWidget {
                 controller: customerController,
                 label: l10n.customerSupplierName,
                 hint: l10n.enterName,
-              ),
-              const SizedBox(height: 16),
-              _LabeledInput(
-                controller: invoiceController,
-                label: l10n.invoiceIdOptional,
-                hint: 'INV-0000',
-                mono: true,
               ),
               const SizedBox(height: 16),
               _LabeledInput(
@@ -1424,7 +1399,91 @@ class _MobileCompactTotals extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppPalette.backgroundScaffold,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppPalette.borderLowContrast.withValues(alpha: 0.72),
+        ),
+      ),
+      child: Column(
+        children: [
+          _MobileTotalsRow(
+            label: l10n.subtotal,
+            value: _currency(subtotal, l10n),
+          ),
+          const SizedBox(height: 8),
+          _MobileTotalsRow(label: l10n.tax, value: _currency(tax, l10n)),
+          const SizedBox(height: 8),
+          _MobileTotalsRow(
+            label: l10n.totalCost,
+            value: _currency(totalCost, l10n),
+          ),
+          const SizedBox(height: 12),
+          const Divider(color: AppPalette.borderLowContrast, height: 1),
+          const SizedBox(height: 12),
+          _MobileTotalsRow(
+            label: l10n.total,
+            value: _currency(total, l10n),
+            emphasized: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileTotalsRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasized;
+
+  const _MobileTotalsRow({
+    required this.label,
+    required this.value,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: emphasized ? AppPalette.textPrimary : AppPalette.textMuted,
+              fontSize: emphasized ? 15 : 13,
+              fontWeight: emphasized ? FontWeight.w700 : FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerEnd,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                color: AppPalette.textPrimary,
+                fontSize: emphasized ? 18 : 14,
+                fontFamily: 'monospace',
+                fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 

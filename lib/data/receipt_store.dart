@@ -58,24 +58,38 @@ class ReceiptStore extends ChangeNotifier {
   }
 
   /// Saves a new receipt to Firestore and updates the local cache.
-  Future<void> addReceipt(ReceiptRecord receipt) async {
+  Future<ReceiptRecord> addReceipt(ReceiptRecord receipt) async {
     final context = await _ensureLoadedForCurrentOrganization();
 
-    final assigned = _ensureSequentialInvoiceId(receipt);
+    late ReceiptRecord assigned;
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final organizationSnapshot = await transaction.get(
+        context.organizationRef,
+      );
+      final organizationData = organizationSnapshot.data();
+      final storedNextNumber = organizationData?['next_invoice_number'];
+      final nextNumber = storedNextNumber is num && storedNextNumber.toInt() > 0
+          ? storedNextNumber.toInt()
+          : _nextInvoiceNumber(_existingInvoiceIds());
 
-    // Use the receipt's id as the Firestore document id so they stay in sync.
-    await context.collection
-        .doc(assigned.id)
-        .set(
-          assigned.toJson(
-            organizationId: context.organizationId,
-            createdBy: context.userUid,
-            createdByEmail: context.userEmail,
-          ),
-        );
+      assigned = _withInvoiceId(receipt, 'INV-$nextNumber');
+
+      transaction.set(
+        context.collection.doc(assigned.id),
+        assigned.toJson(
+          organizationId: context.organizationId,
+          createdBy: context.userUid,
+          createdByEmail: context.userEmail,
+        ),
+      );
+      transaction.set(context.organizationRef, {
+        'next_invoice_number': nextNumber + 1,
+      }, SetOptions(merge: true));
+    });
 
     _receipts.insert(0, assigned);
     notifyListeners();
+    return assigned;
   }
 
   /// Updates an existing receipt in Firestore and in the local cache.
@@ -85,7 +99,9 @@ class ReceiptStore extends ChangeNotifier {
     final idx = _receipts.indexWhere((r) => r.id == updated.id);
     if (idx == -1) return;
 
-    final assigned = _ensureSequentialInvoiceId(updated, excludeId: updated.id);
+    final assigned = updated.invoiceId?.trim().isNotEmpty == true
+        ? updated
+        : _ensureSequentialInvoiceId(updated, excludeId: updated.id);
 
     await context.collection
         .doc(assigned.id)
@@ -134,6 +150,9 @@ class ReceiptStore extends ChangeNotifier {
       organizationId: normalizedOrganizationId,
       userUid: uid,
       userEmail: user?.email?.trim() ?? (userData?['email'] as String? ?? ''),
+      organizationRef: FirebaseFirestore.instance
+          .collection('organizations')
+          .doc(normalizedOrganizationId),
       collection: FirebaseFirestore.instance
           .collection('organizations')
           .doc(normalizedOrganizationId)
@@ -147,10 +166,7 @@ class ReceiptStore extends ChangeNotifier {
     ReceiptRecord receipt, {
     String? excludeId,
   }) {
-    final existingIds = _receipts
-        .where((r) => r.invoiceId != null && r.id != excludeId)
-        .map((r) => r.invoiceId!)
-        .toSet();
+    final existingIds = _existingInvoiceIds(excludeId: excludeId);
 
     final currentId = receipt.invoiceId?.trim();
     if (currentId != null &&
@@ -160,10 +176,14 @@ class ReceiptStore extends ChangeNotifier {
     }
 
     final nextNumber = _nextInvoiceNumber(existingIds);
+    return _withInvoiceId(receipt, 'INV-$nextNumber');
+  }
+
+  ReceiptRecord _withInvoiceId(ReceiptRecord receipt, String invoiceId) {
     return ReceiptRecord(
       id: receipt.id,
       customerName: receipt.customerName,
-      invoiceId: 'INV-$nextNumber',
+      invoiceId: invoiceId,
       date: receipt.date,
       createdAt: receipt.createdAt,
       items: receipt.items,
@@ -174,6 +194,13 @@ class ReceiptStore extends ChangeNotifier {
       createdBy: receipt.createdBy,
       createdByEmail: receipt.createdByEmail,
     );
+  }
+
+  Set<String> _existingInvoiceIds({String? excludeId}) {
+    return _receipts
+        .where((r) => r.invoiceId != null && r.id != excludeId)
+        .map((r) => r.invoiceId!)
+        .toSet();
   }
 
   int _nextInvoiceNumber(Set<String> existingIds) {
@@ -431,12 +458,14 @@ class _ReceiptCollectionContext {
   final String organizationId;
   final String userUid;
   final String userEmail;
+  final DocumentReference<Map<String, dynamic>> organizationRef;
   final CollectionReference<Map<String, dynamic>> collection;
 
   const _ReceiptCollectionContext({
     required this.organizationId,
     required this.userUid,
     required this.userEmail,
+    required this.organizationRef,
     required this.collection,
   });
 }
