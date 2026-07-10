@@ -86,14 +86,21 @@ class _DashPageState extends State<DashPage> {
   }
 
   Widget _buildDashboard(DashboardData data, AppLocalizations l10n) {
-    final profitStats = data.statsFor(_periodFromLabel(selectedRevenuePeriod));
+    final revenuePeriod = _periodFromLabel(selectedRevenuePeriod);
+    final profitStats = data.statsFor(revenuePeriod);
     final salesStats = data.statsFor(_periodFromLabel(selectedSalesPeriod));
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= 1024;
         final content = <Widget>[
-          _buildKpiGrid(profitStats, salesStats, l10n),
+          _buildKpiGrid(
+            profitStats,
+            salesStats,
+            data.averageInvoice,
+            data.customerCount,
+            l10n,
+          ),
           SizedBox(height: isDesktop ? 28 : 24),
           _buildSectionHeader(
             l10n.dashboardRevenueVsExpenses,
@@ -148,6 +155,8 @@ class _DashPageState extends State<DashPage> {
   Widget _buildKpiGrid(
     DashboardPeriodStats profitStats,
     DashboardPeriodStats salesStats,
+    double averageInvoice,
+    int customerCount,
     AppLocalizations l10n,
   ) {
     return LayoutBuilder(
@@ -191,7 +200,7 @@ class _DashPageState extends State<DashPage> {
               width: tileWidth,
               child: _buildSimpleStatCard(
                 l10n.dashboardAverageInvoice,
-                _currency(profitStats.averageInvoice),
+                _currency(averageInvoice),
                 null,
               ),
             ),
@@ -199,7 +208,7 @@ class _DashPageState extends State<DashPage> {
               width: tileWidth,
               child: _buildSimpleStatCard(
                 l10n.dashboardCustomers,
-                profitStats.customerCount.toString(),
+                customerCount.toString(),
                 null,
               ),
             ),

@@ -51,6 +51,8 @@ class DashboardData {
   final List<DashboardProduct> bestProducts;
   final List<DashboardProduct> leastProducts;
   final List<DashboardCustomer> topCustomers;
+  final int customerCount;
+  final double averageInvoice;
 
   const DashboardData({
     required this.receipts,
@@ -58,15 +60,22 @@ class DashboardData {
     required this.bestProducts,
     required this.leastProducts,
     required this.topCustomers,
+    required this.customerCount,
+    required this.averageInvoice,
   });
 
   factory DashboardData.fromReceipts(List<ReceiptRecord> receipts) {
+    final topCustomers = _buildTopCustomers(receipts);
     return DashboardData(
       receipts: receipts,
       monthlyPoints: _buildMonthlyPoints(receipts),
       bestProducts: _buildProducts(receipts, least: false),
       leastProducts: _buildProducts(receipts, least: true),
-      topCustomers: _buildTopCustomers(receipts),
+      topCustomers: topCustomers,
+      customerCount: topCustomers.length,
+      averageInvoice: receipts.isEmpty
+          ? 0
+          : _sumTotal(receipts) / receipts.length,
     );
   }
 

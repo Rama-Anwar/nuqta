@@ -973,55 +973,57 @@ class _InvoicesPageState extends State<InvoicesPage> {
   }
 
   Widget _buildLedgerLoadingState() {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: _surfaceDecoration(),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: const [
-                    _LoadingBlock(width: 176, height: 58),
-                    _LoadingBlock(width: 176, height: 58),
-                    _LoadingBlock(width: 92, height: 42),
-                  ],
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: _surfaceDecoration(),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: const [
+                      _LoadingBlock(width: 176, height: 58),
+                      _LoadingBlock(width: 176, height: 58),
+                      _LoadingBlock(width: 92, height: 42),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: _surfaceDecoration(borderAlpha: 0.54),
-                child: const Row(
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: _surfaceDecoration(borderAlpha: 0.54),
+                  child: const Row(
+                    children: [
+                      Expanded(child: _LoadingBlock(height: 18)),
+                      SizedBox(width: 16),
+                      _LoadingBlock(width: 110, height: 18),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const _LoadingBlock(height: 116),
+                const SizedBox(height: 12),
+                const _LoadingBlock(height: 116),
+                const SizedBox(height: 24),
+                const Row(
                   children: [
-                    Expanded(child: _LoadingBlock(height: 18)),
+                    Expanded(child: _LoadingBlock(height: 82)),
                     SizedBox(width: 16),
-                    _LoadingBlock(width: 110, height: 18),
+                    Expanded(child: _LoadingBlock(height: 82)),
                   ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              const _LoadingBlock(height: 116),
-              const SizedBox(height: 12),
-              const _LoadingBlock(height: 116),
-              const SizedBox(height: 24),
-              const Row(
-                children: [
-                  Expanded(child: _LoadingBlock(height: 82)),
-                  SizedBox(width: 16),
-                  Expanded(child: _LoadingBlock(height: 82)),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
