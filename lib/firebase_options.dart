@@ -79,5 +79,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'nuqta-7267a.firebasestorage.app',
     measurementId: 'G-2ZXJ2EBM0L',
   );
-
 }

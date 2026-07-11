@@ -1,0 +1,12 @@
+Users and Passwords for test :
+
+
+Owner User and password :
+
+shadiemolyee@gmail.com  pass : 123321          (This user for Organization 2)
+
+
+
+Employee User and password :
+
+ramaemployee@gmail.com  pass : 123321          (This user for Organization 1)
