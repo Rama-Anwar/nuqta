@@ -281,12 +281,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: _showTaxPercentageDialog,
             ),
             _buildDivider(),
-            _buildActionRow(
-              icon: Icons.inventory_2_outlined,
-              title: l10n.inventorySheet,
-              subtitle: l10n.manageStockAndProducts,
-              onTap: () => _openInventorySheet(l10n),
-            ),
+            if (isOwner) ...[
+              _buildActionRow(
+                icon: Icons.inventory_2_outlined,
+                title: l10n.inventorySheet,
+                subtitle: l10n.manageStockAndProducts,
+                onTap: () {
+                  Navigator.of(context).pushNamed(AppRoutes.inventory);
+                },
+              ),
+            ],
             _buildDivider(),
           ],
           _buildActionRow(

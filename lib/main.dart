@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:invoice_ai/firebase_options.dart';
+import 'package:invoice_ai/inventory_management_system.dart';
 import 'package:invoice_ai/l10n/app_localizations.dart';
 import 'package:invoice_ai/noti.dart';
 import 'package:invoice_ai/providers/locale_provider.dart';
@@ -65,6 +66,7 @@ class MyApp extends StatelessWidget {
             const AppTabShell(initialRoute: AppRoutes.profile),
         AppRoutes.support: (_) => const TechnicalSupportPage(),
         AppRoutes.aiAssistant: (_) => const AiAssistantScreen(),
+                AppRoutes.inventory: (_) => const InventorySheetScreen(),
       },
       home: SplashScreen(
         nextScreenBuilder: () => _loadStartupScreen(localeProvider),
