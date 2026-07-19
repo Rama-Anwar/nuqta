@@ -358,8 +358,9 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
             : const Color(0xFF1F2428);
 
         final docId = _readField(item, const ['__docId']);
-        final itemId = _readField(item, const ['id', 'ID']);
+        final itemId = _readField(item, const ['id', 'ID', '__docId']);
         final name = _readField(item, const [
+          'official_name',
           'official item name',
           'officialItemName',
           'description',
@@ -367,13 +368,16 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
         ]);
         final category = _readField(item, const ['category', 'الفئة']);
         final cost = _formatDinarField(item, const [
+          'cost_jod',
           'cost (dinar)',
           'costDinar',
           'cost',
         ]);
         final price = _formatDinarField(item, const [
+          'price_jod',
           'price (dinar)',
           'priceDinar',
+          'price',
           'market',
         ]);
         final quantity = _readQuantity(item, const [
@@ -382,7 +386,10 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
           'count',
           'الكمية',
         ]);
-        final keywords = _readField(item, const [
+        final keywords = _formatAliases(item, const [
+          'aliases',
+          'alternative_names',
+          'alternativeNames',
           'الأسماء البديلة والكلمات المفتاحية',
           'alternative names & keywords',
           'keywords',
@@ -505,45 +512,14 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
               }
 
               final rows =
-                  snapshot.data?.docs
-                      .map(
-                        (doc) => <String, dynamic>{
-                          '__docId': doc.id,
-                          'id': doc.data()['id'] ?? doc.id,
-                          'official item name':
-                              doc.data()['official item name'] ??
-                              doc.data()['officialItemName'] ??
-                              doc.data()['description'] ??
-                              doc.data()['sku'] ??
-                              '',
-                          'category':
-                              doc.data()['category'] ??
-                              doc.data()['الفئة'] ??
-                              '',
-                          'cost (dinar)':
-                              doc.data()['cost (dinar)'] ??
-                              doc.data()['costDinar'] ??
-                              doc.data()['cost'] ??
-                              '',
-                          'price (dinar)':
-                              doc.data()['price (dinar)'] ??
-                              doc.data()['priceDinar'] ??
-                              doc.data()['market'] ??
-                              '',
-                          'quantity':
-                              doc.data()['quantity'] ??
-                              doc.data()['qty'] ??
-                              doc.data()['count'] ??
-                              doc.data()['الكمية'] ??
-                              0,
-                          'الأسماء البديلة والكلمات المفتاحية':
-                              doc.data()['الأسماء البديلة والكلمات المفتاحية'] ??
-                              doc.data()['alternative names & keywords'] ??
-                              doc.data()['keywords'] ??
-                              '',
-                        },
-                      )
-                      .toList() ??
+                  snapshot.data?.docs.map((doc) {
+                    final data = doc.data();
+                    return <String, dynamic>{
+                      ...data,
+                      '__docId': doc.id,
+                      'id': data['id'] ?? doc.id,
+                    };
+                  }).toList() ??
                   const <Map<String, dynamic>>[];
 
               final filteredRows = rows.where(_matchesSearchQuery).toList();
@@ -577,11 +553,19 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
     final haystack =
         [
               item['id'],
+              item['official_name'],
               item['official item name'],
               item['category'],
+              item['cost_jod'],
               item['cost (dinar)'],
+              item['price_jod'],
               item['price (dinar)'],
               item['quantity'],
+              _formatAliases(item, const [
+                'aliases',
+                'alternative_names',
+                'alternativeNames',
+              ]),
               item['الأسماء البديلة والكلمات المفتاحية'],
             ]
             .where((value) => value != null)
@@ -612,6 +596,7 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
     final isEditing = existingItem != null;
     final nameController = TextEditingController(
       text: _readField(existingItem ?? const {}, const [
+        'official_name',
         'official item name',
         'officialItemName',
         'description',
@@ -623,6 +608,7 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
     );
     final costController = TextEditingController(
       text: _formatDinarField(existingItem ?? const {}, const [
+        'cost_jod',
         'cost (dinar)',
         'costDinar',
         'cost',
@@ -630,13 +616,18 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
     );
     final priceController = TextEditingController(
       text: _formatDinarField(existingItem ?? const {}, const [
+        'price_jod',
         'price (dinar)',
         'priceDinar',
+        'price',
         'market',
       ]),
     );
     final keywordsController = TextEditingController(
-      text: _readField(existingItem ?? const {}, const [
+      text: _formatAliases(existingItem ?? const {}, const [
+        'aliases',
+        'alternative_names',
+        'alternativeNames',
         'الأسماء البديلة والكلمات المفتاحية',
         'alternative names & keywords',
         'keywords',
@@ -662,10 +653,10 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
         Future<void> saveItem() async {
           final officialItemName = nameController.text.trim();
           final category = categoryController.text.trim();
-          final cost = double.tryParse(costController.text.trim()) ?? 0;
-          final price = double.tryParse(priceController.text.trim()) ?? 0;
-          final keywords = keywordsController.text.trim();
-          final quantity = int.tryParse(quantityController.text.trim()) ?? 0;
+          final cost = _parseDouble(costController.text);
+          final price = _parseDouble(priceController.text);
+          final aliases = _parseAliases(keywordsController.text);
+          final quantity = _parseInt(quantityController.text);
 
           if (officialItemName.isEmpty || category.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -694,28 +685,42 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
                 );
               }
 
-              await collection.doc(targetDocId).set({
-                'id': targetDocId,
-                'official item name': officialItemName,
-                'category': category,
-                'cost (dinar)': cost,
-                'price (dinar)': price,
-                'quantity': quantity,
-                'الأسماء البديلة والكلمات المفتاحية': keywords,
-                'updatedAt': FieldValue.serverTimestamp(),
-              }, SetOptions(merge: true));
+              await collection
+                  .doc(targetDocId)
+                  .set(
+                    _inventorySaveData(
+                      id: _readField(existingItem, const [
+                        'id',
+                        'ID',
+                        '__docId',
+                      ]),
+                      officialName: officialItemName,
+                      aliases: aliases,
+                      category: category,
+                      costJod: cost,
+                      priceJod: price,
+                      quantity: quantity,
+                      existingItem: existingItem,
+                    ),
+                    SetOptions(merge: true),
+                  );
             } else {
               final docRef = collection.doc();
               await docRef.set({
                 'id': docRef.id,
-                'official item name': officialItemName,
+                'official_name': officialItemName,
+                'aliases': aliases,
                 'category': category,
-                'cost (dinar)': cost,
-                'price (dinar)': price,
+                'cost_jod': cost,
+                'price_jod': price,
                 'quantity': quantity,
-                'الأسماء البديلة والكلمات المفتاحية': keywords,
-                'createdAt': FieldValue.serverTimestamp(),
-                'updatedAt': FieldValue.serverTimestamp(),
+                'unit': '',
+                'barcode': '',
+                'description': '',
+                'is_active': true,
+                'source': 'manual',
+                'created_at': FieldValue.serverTimestamp(),
+                'updated_at': FieldValue.serverTimestamp(),
               });
             }
 
@@ -872,10 +877,48 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
       final value = item[key];
       if (value == null) continue;
       if (value is num) {
-        return value.toStringAsFixed(value % 1 == 0 ? 0 : 2);
+        return value.toDouble().toStringAsFixed(2);
       }
-      final text = value.toString().trim();
-      if (text.isNotEmpty) return text;
+      final parsed = double.tryParse(value.toString().trim());
+      if (parsed != null) return parsed.toStringAsFixed(2);
+    }
+    return '';
+  }
+
+  double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString().trim() ?? '') ?? 0.0;
+  }
+
+  int _parseInt(dynamic value) {
+    if (value is num) return value.toInt();
+    final parsedDouble = double.tryParse(value?.toString().trim() ?? '');
+    return parsedDouble?.toInt() ?? 0;
+  }
+
+  List<String> _parseAliases(dynamic value) {
+    if (value is List) {
+      return value
+          .map((entry) => entry.toString().trim())
+          .where((entry) => entry.isNotEmpty)
+          .toList();
+    }
+
+    if (value is String) {
+      return value
+          .split(RegExp(r'[,،|;\n]+'))
+          .map((entry) => entry.trim())
+          .where((entry) => entry.isNotEmpty)
+          .toList();
+    }
+
+    return <String>[];
+  }
+
+  String _formatAliases(Map<String, dynamic> item, List<String> keys) {
+    for (final key in keys) {
+      final aliases = _parseAliases(item[key]);
+      if (aliases.isNotEmpty) return aliases.join(', ');
     }
     return '';
   }
@@ -884,11 +927,41 @@ class _InventorySheetScreenState extends State<InventorySheetScreen> {
     for (final key in keys) {
       final value = item[key];
       if (value == null) continue;
-      if (value is num) return value.toInt();
-      final parsed = int.tryParse(value.toString().trim());
-      if (parsed != null) return parsed;
+      final parsed = _parseInt(value);
+      if (parsed != 0 || value.toString().trim() == '0') return parsed;
     }
     return 0;
+  }
+
+  Map<String, dynamic> _inventorySaveData({
+    required String id,
+    required String officialName,
+    required List<String> aliases,
+    required String category,
+    required double costJod,
+    required double priceJod,
+    required int quantity,
+    required Map<String, dynamic> existingItem,
+  }) {
+    return {
+      'id': id.isEmpty ? _readField(existingItem, const ['__docId']) : id,
+      'official_name': officialName,
+      'aliases': aliases,
+      'category': category,
+      'cost_jod': costJod,
+      'price_jod': priceJod,
+      'quantity': quantity,
+      'unit': _readField(existingItem, const ['unit']),
+      'barcode': _readField(existingItem, const ['barcode']),
+      'description': _readField(existingItem, const ['description']),
+      'is_active': existingItem['is_active'] is bool
+          ? existingItem['is_active']
+          : existingItem['isActive'] is bool
+          ? existingItem['isActive']
+          : true,
+      'source': _readField(existingItem, const ['source']),
+      'updated_at': FieldValue.serverTimestamp(),
+    };
   }
 
   String _statusFromQuantity(int quantity) {
